@@ -123,6 +123,7 @@ software tools. Our task is to develop a specialized tool to quantify
 the goldfish's position and its direction.
 
 \section{Information to Extract}
+
 To accomplish this, the program must be able to first determine if the
 goldfish is in fact in the frame. It then must be able to judge the
 orientation of the goldfish in some manner. This makes the problem both
@@ -130,8 +131,24 @@ one of feature detection and classification, and of orientation. The
 goldfish must then be able to be detected at any orientation, and have
 some test to see if it is facing the female.
 
-The detection and tracking of the goldfish will be done using a particle
-filter similar to the one described by Nummiero et. al in 2003.
+\section{Approach}
+
+To determine if the goldfish is in the frame, we'll use a simple
+background subtraction  To determine the orientation, we will use a
+particle filter similar to the one described by Nummiero et. al
+in 2003. To determine orientation, we'll track two locations on the
+fish, and calculate the horizontal distance between them. If this
+distance falls between an acceptable range, we can conclude that the
+fish is facing to the left.
+
+\subsection{Background subtraction}
+
+The background subtraction method is quite simple. We merely take a
+frame where the goldfish is not present, and subtract the given frame.
+If the resulting image consists of zeroes, we can conclude that we have
+another background frame, and thus, that the goldfish is not present.
+
+\subsection{Particle filtering}
 
 \end{spacing}
 \end{document}

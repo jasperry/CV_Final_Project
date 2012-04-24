@@ -135,14 +135,15 @@ some test to see if it is facing the female.
 
 To determine if the goldfish is in the frame, we'll use a simple
 background subtraction  To determine the orientation, we will use a
-particle filter similar to the one described by Nummiero et. al
-in 2003 to track two locations on the fish. We will use an intensity
-histogram as opposed to the color histogram to define an object. Then,
-determine the probability of an object being in a location by using weighted 
-sampling and comparing the Bhattacharyya distance of the intensity distribution
-at a given sample area. Then we can calculate the horizontaldistance between
-the most probable locations. If this distance falls in an acceptable range,
-we can conclude that the fish is facing to the left.
+particle filter similar to the one described by Nummiero et. al in 2003
+to track two locations on the fish. We will use an intensity histogram
+as opposed to the color histogram to define an object. Then, determine
+the probability of an object being in a location by using weighted
+sampling and comparing the Bhattacharyya distance of the intensity
+distribution at a given sample area. Then we can calculate the
+horizontal distance between the most probable locations. If this
+distance falls in an acceptable range, we can conclude that the fish is
+facing to the left.
 
 \subsection{Background subtraction}
 

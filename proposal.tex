@@ -1,0 +1,138 @@
+% David Cain
+% 2012-04-23
+% Based off a template by Ted Pavlic from http://www.vel.co.nz
+
+\documentclass[english]{report}
+\usepackage{Tabbing}
+\usepackage{amsmath,amsfonts,amsthm,amssymb}
+\usepackage{chngpage}
+\usepackage{extramarks}
+\usepackage{fancyhdr}
+\usepackage{graphicx,float,wrapfig}
+\usepackage{isodate}
+\usepackage{lastpage}
+\usepackage{listings}
+\usepackage{setspace}
+\usepackage{soul,color}
+
+% Use ISO-8601 for today's date
+\isodate
+
+% Configure listings for Python
+\lstset{
+  language=Python,
+  showstringspaces=false,
+  formfeed=\newpage,
+  tabsize=4,
+  commentstyle=\itshape
+}
+
+\newcommand{\code}[1]{
+  %\hrulefill
+  \lstinputlisting{#1}
+  \vspace{2em}
+}
+
+
+% In case you need to adjust margins:
+\topmargin=-0.45in
+\evensidemargin=0in
+\oddsidemargin=0in
+\textwidth=6.5in
+\textheight=9.0in
+\headsep=0.25in
+
+% Homework-specific information
+\newcommand{\thedate}{2012-04-23}
+\newcommand{\hmwkTitle}{Final Project Proposal}
+\newcommand{\courseName}{CS\ 365}
+\newcommand{\courseFullName}{Computer\ Vision}
+\newcommand{\classTime}{11:00}
+\newcommand{\courseInstructor}{Brian\ Eastwood}
+\newcommand{\authorName}{David\ Cain,\ Justin\ Sperry}
+
+% Setup the header and footer
+\pagestyle{fancy}
+\lhead{\authorName}
+\chead{\courseName\ \hmwkTitle}
+\rhead{\thedate}
+\lfoot{\lastxmark}
+\cfoot{}
+\rfoot{Page\ \thepage\ of\ \pageref{LastPage}}
+\renewcommand\headrulewidth{0.4pt}
+\renewcommand\footrulewidth{0.4pt}
+
+% This is used to trace down (pin point) problems
+% in latexing a document:
+%\tracingall
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Formatting
+\newcommand{\enterProblemHeader}[1]{\nobreak\extramarks{#1}{#1 continued on next page\ldots}\nobreak%
+                                    \nobreak\extramarks{#1 (continued)}{#1 continued on next page\ldots}\nobreak}%
+\newcommand{\exitProblemHeader}[1]{\nobreak\extramarks{#1 (continued)}{#1 continued on next page\ldots}\nobreak%
+                                   \nobreak\extramarks{#1}{}\nobreak}%
+\setcounter{secnumdepth}{0}
+\newcommand{\problemName}{}%
+\newcounter{problemCounter}%
+\newenvironment{problem}[1][\arabic{problemCounter}.)]%
+  {\stepcounter{problemCounter}%
+   \renewcommand{\problemName}{#1}%
+   \section{\problemName}%
+   \enterProblemHeader{\problemName}}%
+  {\exitProblemHeader{\problemName}}%
+
+\newcommand{\problemQuestion}[1]
+  {\noindent\fbox{\begin{minipage}[c]{\columnwidth}#1\end{minipage}}}%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Make title
+\title{\vspace{2in}\textmd{\textbf{\hmwkClass:\
+\hmwkTitle}}\\\normalsize\vspace{0.1in}\small{Due\ on\
+\today}\\\vspace{0.1in}\large{\textit{\classInstructor\ }}\vspace{3in}}
+\date{}
+\author{\textbf{\authorName}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\begin{spacing}{1.1}
+
+% Title page
+%\maketitle
+%\newpage
+
+\section{The Problem}
+
+The data set we are given is a video stream of a goldfish within a fish
+tank. The fish was injected with a very high level of testosterone, with
+the hypothesis that the increased testosterone levels would affect its
+sexual behavior. The fish tank is directly bordering the tank of a
+female, with a glass wall separating the two fish. The researchers
+postulate that the goldfish will spend more time on the left end of the
+tank, facing the female when it is sexually stimulated.
+
+To explore this hypothesis, researchers are looking to quantify how much
+time the goldfish spends on the left side of the tank, facing towards
+the female fish. The image stream we are given is a black and white
+video of the left side of the tank (the fish may leave the frame at any
+point). The video is quite long, and of a high frame rate.
+
+The researchers were not successful in using other computer vision
+software tools. Our task is to develop a specialized tool to quantify
+the goldfish's position and its direction.
+
+\section{Information to Extract}
+To accomplish this, the program must be able to first determine if the
+goldfish is in fact in the frame. It then must be able to judge the
+orientation of the goldfish in some manner. This makes the problem both
+one of feature detection and classification, and of orientation. The
+goldfish must then be able to be detected at any orientation, and have
+some test to see if it is facing the female.
+
+The detection and tracking of the goldfish will be done using a particle
+filter similar to the one described by Nummiero et. al in 2003.
+
+\end{spacing}
+\end{document}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -140,17 +140,32 @@ def particle_filter_test():
 		
 if __name__ == "__main__":
 	particle_filter_test()
-	'''
-	display = Display(video_stream.getOutput(), "Testosterone-laden fish")
-	fish_presence = BackgroundSubtraction(video_stream.getOutput())
-
-	while key != 27:
-		video_stream.update()
-		display.update()
-		fish_presence.update()
+    # A list of all the goldfish-free frames
+    all_frame_fns = sorted(glob.glob("fish-74.2/*.tif"))
+    bg_frame_fns = sorted(glob.glob("fish-74.2/blanks/*.tif"))
 
 		key = cv2.waitKey(10)
 		key &= 255
-	'''
+		
+    # Create a numpy image that is the average of all background frames
+    avg_bg = bg_frames.get_avg_image()
 
 
+
+    all_images = source.FileStackReader(all_frame_fns)
+    display = Display(all_images.getOutput(), "Testosterone-laden fish")
+    fish_presence = BackgroundSubtraction(all_images.getOutput(), avg_bg)
+
+    # Display the video, and the fish's presence
+    key = None
+    while key != 27:
+        all_images.increment()
+        all_images.update()
+        #print all_images.getFilename()
+        display.update()
+        fish_presence.update()
+
+        # TODO: add a delay that's either consistent with the FPS Brian
+        #       obtained, or sped up but still reasonably visible
+        key = cv2.waitKey(20)
+        key &= 255

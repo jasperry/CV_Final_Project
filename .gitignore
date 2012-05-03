@@ -1,3 +1,7 @@
 *.aux
 *.log
 *.pdf
+
+cs365/
+fish-74.2/
+fish-83.2/

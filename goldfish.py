@@ -16,6 +16,7 @@ import numpy
 import avgimage
 import pipeline
 import source
+import particle_filter
 
 class Display(pipeline.ProcessObject):
     """
@@ -60,23 +61,11 @@ class BackgroundSubtraction(pipeline.ProcessObject):
         fish_present = (output.mean() > self.threshold)
         
         self.getOutput(0).setData(fish_present)
-        
-if __name__ == "__main__":
 
-    '''
-    display = Display(video_stream.getOutput(), "Testosterone-laden fish")
-    fish_presence = BackgroundSubtraction(video_stream.getOutput())
 
-    while key != 27:
-        video_stream.update()
-        display.update()
-        fish_presence.update()
 
-        key = cv2.waitKey(10)
-        key &= 255
-    '''
-
-    # A list of all the goldfish-free frames
+def background_subtraction():
+	# A list of all the goldfish-free frames
     bg_frame_fns = glob.glob("fish-74.2/blanks/*.tif")
 
     # Use pipeline object to read background frames, an object to average them
@@ -92,3 +81,27 @@ if __name__ == "__main__":
 
     # Create a numpy image that is the average of all background frames
     average_background = bg_frames.get_avg_image()
+
+
+
+def particle_filter_test():
+	pass
+
+
+        
+if __name__ == "__main__":
+	particle_filter_test()
+    '''
+    display = Display(video_stream.getOutput(), "Testosterone-laden fish")
+    fish_presence = BackgroundSubtraction(video_stream.getOutput())
+
+    while key != 27:
+        video_stream.update()
+        display.update()
+        fish_presence.update()
+
+        key = cv2.waitKey(10)
+        key &= 255
+    '''
+
+

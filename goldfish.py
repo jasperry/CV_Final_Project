@@ -77,7 +77,8 @@ if __name__ == "__main__":
     '''
 
     # A list of all the goldfish-free frames
-    bg_frame_fns = glob.glob("fish-74.2/blanks/*.tif")
+    all_frame_fns = sorted(glob.glob("fish-74.2/*.tif"))
+    bg_frame_fns = sorted(glob.glob("fish-74.2/blanks/*.tif"))
 
     # Use pipeline object to read background frames, an object to average them
     bg_images = source.FileStackReader(bg_frame_fns)
@@ -91,4 +92,24 @@ if __name__ == "__main__":
         bg_images.increment()
 
     # Create a numpy image that is the average of all background frames
-    average_background = bg_frames.get_avg_image()
+    avg_bg = bg_frames.get_avg_image()
+
+
+
+    all_images = source.FileStackReader(all_frame_fns)
+    display = Display(all_images.getOutput(), "Testosterone-laden fish")
+    fish_presence = BackgroundSubtraction(all_images.getOutput(), avg_bg)
+
+    # Display the video, and the fish's presence
+    key = None
+    while key != 27:
+        all_images.increment()
+        all_images.update()
+        #print all_images.getFilename()
+        display.update()
+        fish_presence.update()
+
+        # TODO: add a delay that's either consistent with the FPS Brian
+        #       obtained, or sped up but still reasonably visible
+        key = cv2.waitKey(20)
+        key &= 255

@@ -85,36 +85,7 @@ def background_subtraction():
         bg_frames.add_image( image )
         bg_images.increment()
 
-    # Create a numpy image that is the average of all background frames
-    avg_bg = bg_frames.get_avg_image()
-    
 
-    all_images = source.FileStackReader(all_frame_fns)
-    display = Display(all_images.getOutput(), "Testosterone-laden fish")
-    fish_presence = BackgroundSubtraction(all_images.getOutput(), avg_bg)
-
-    # Display video, gather data about fish's presence, abs mean value
-    intensity_data = []
-    prev_frame = None
-    key = None
-    while (key != 27) and (all_images.getFrameName() != prev_frame):
-        all_images.update()
-        display.update()
-        fish_presence.update()
-
-        fish_present = fish_presence.getOutput(0)
-        avg_val = fish_presence.getOutput(1)
-        intensity_data.append( (avg_val, all_images.getFrameName(), fish_present) )
-
-        # TODO: add a delay that's either consistent with the FPS Brian
-        #       obtained, or sped up but still reasonably visible
-        all_images.increment()
-        key = cv2.waitKey(20)
-        key &= 255
-
-    intensity_out = csv.writer(open("image-bg_values.csv", "wb"))
-    for (value, frame_name, fish_present) in sorted(intensity_data):
-        intensity_out.writerow( [frame_name, value, fish_present] )
 
 class ShowFeatures(pipeline.ProcessObject):
     '''
@@ -172,4 +143,4 @@ def particle_filter_test():
         
 if __name__ == "__main__":
     particle_filter_test()
-    # A list of all the goldfish-free frames
+

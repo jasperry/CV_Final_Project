@@ -44,15 +44,22 @@ class Particle_Filter(pipeline.ProcessObject):
 		
 			#perturb particles, clip for size, make histograms for each particle
 			self.x += numpy.random.uniform(-self.stepsize, self.stepsize, self.x.shape)
-			self.x = self.x.clip(numpy.zeros(2), numpy.array(input.shape)-1).astype(int)
+			#clip to get that damn wall out of there
+			self.x = self.x.clip(numpy.array([0,103]), numpy.array(input.shape)-1).astype(int)
 			new_hist = self.make_histogram(input, self.x, self.stepsize)
 			
 			#calculate weights (as battacharyya distances)
 			w = self.get_weights(new_hist, self.hist)
 			w /= numpy.sum(w)
 			
+			#sums the weighted particle positions
 			new_pos = numpy.sum(self.x.T*w, axis = 1)
-			print new_pos
+			
+			
+			#picks the location of the best particle
+			#new_pos = self.x[numpy.argmax(w),:]
+			
+			
 			self.getOutput(0).setData(new_pos)
 			self.x = numpy.ones((self.n,2), int) * new_pos
 			

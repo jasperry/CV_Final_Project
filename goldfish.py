@@ -5,6 +5,7 @@
 # 2012-05-02
 # CS365, Brian Eastwood
 
+import csv
 import os
  
 import glob
@@ -44,7 +45,7 @@ class BackgroundSubtraction(pipeline.ProcessObject):
         Segments the bacteria colonies in the images.
     """
     def __init__(self, input=None, bgImg=None, threshold=2.0):
-        pipeline.ProcessObject.__init__(self, input)
+        pipeline.ProcessObject.__init__(self, input, outputCount=2)
         self.bgImg = bgImg
         self.threshold = threshold
     
@@ -56,28 +57,18 @@ class BackgroundSubtraction(pipeline.ProcessObject):
 
         input = self.getInput(0).getData()
         #background subtraction
-        output = (input.astype(numpy.float) - self.bgImg.astype(numpy.float))
-        fish_present = (output.mean() > self.threshold)
-        
-        self.getOutput(0).setData(fish_present)
+        diff = abs(input.astype(numpy.float) - self.bgImg.astype(numpy.float))
+        fish_present = diff.mean() > self.threshold
+
+        self.setOutput(fish_present, 0)
+        self.setOutput(diff.mean(), 1)
         
 if __name__ == "__main__":
 
-    '''
-    display = Display(video_stream.getOutput(), "Testosterone-laden fish")
-    fish_presence = BackgroundSubtraction(video_stream.getOutput())
-
-    while key != 27:
-        video_stream.update()
-        display.update()
-        fish_presence.update()
-
-        key = cv2.waitKey(10)
-        key &= 255
-    '''
-
-    # A list of all the goldfish-free frames
+    # All frames in the dataset
     all_frame_fns = sorted(glob.glob("fish-74.2/*.tif"))
+
+    # A list of all frames where the goldfish and its shadow are absent
     bg_frame_fns = sorted(glob.glob("fish-74.2/blanks/*.tif"))
 
     # Use pipeline object to read background frames, an object to average them
@@ -96,20 +87,31 @@ if __name__ == "__main__":
 
 
 
+    #all_frame_fns = ["fish-74.2/fish-74.2-000002.tif"] # fish frame - 1.76
+
     all_images = source.FileStackReader(all_frame_fns)
     display = Display(all_images.getOutput(), "Testosterone-laden fish")
     fish_presence = BackgroundSubtraction(all_images.getOutput(), avg_bg)
 
-    # Display the video, and the fish's presence
+    # Display video, gather data about fish's presence, abs mean value
+    intensity_data = []
+    prev_frame = None
     key = None
-    while key != 27:
-        all_images.increment()
+    while (key != 27) and (all_images.getFrameName() != prev_frame):
         all_images.update()
-        #print all_images.getFilename()
         display.update()
         fish_presence.update()
 
+        fish_present = fish_presence.getOutput(0)
+        avg_val = fish_presence.getOutput(1)
+        intensity_data.append( (avg_val, all_images.getFrameName(), fish_present) )
+
         # TODO: add a delay that's either consistent with the FPS Brian
         #       obtained, or sped up but still reasonably visible
+        all_images.increment()
         key = cv2.waitKey(20)
         key &= 255
+
+    intensity_out = csv.writer(open("image-bg_values.csv", "wb"))
+    for (value, frame_name, fish_present) in sorted(intensity_data):
+        intensity_out.writerow( [frame_name, value, fish_present] )

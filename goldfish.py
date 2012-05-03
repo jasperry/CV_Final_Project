@@ -6,7 +6,6 @@
 # CS365, Brian Eastwood
 
 import csv
-import os
  
 import glob
 #from scipy import ndimage
@@ -65,32 +64,10 @@ class BackgroundSubtraction(pipeline.ProcessObject):
         self.setOutput(fish_present, 0)
         self.setOutput(diff.mean(), 1)
 
-
-def background_subtraction():
-
-    # All frames in the data set
-    all_frame_fns = sorted(glob.glob("fish-74.2/*.tif"))
-
-    # A list of all frames where the goldfish and its shadow are absent
-    bg_frame_fns = sorted(glob.glob("fish-74.2/blanks/*.tif"))
-
-    # Use pipeline object to read background frames, an object to average them
-    bg_images = source.FileStackReader(bg_frame_fns)
-    bg_frames = avgimage.AvgImage(buffer_size = len(bg_frame_fns))
-
-    # Add all the background frames to the average image object
-    for i in range(len(bg_frame_fns)):
-        bg_images.update()
-        image = (bg_images.getOutput()).getData()
-        bg_frames.add_image( image )
-        bg_images.increment()
-
-
-
 class ShowFeatures(pipeline.ProcessObject):
-    '''
-    Draws boxes around the features in an image
-    '''
+    """
+        Draws boxes around the features in an image
+    """
     def __init__(self, input = None, features = None, n = None):
         pipeline.ProcessObject.__init__(self, input, 2)
         self.setInput(features, 1)
@@ -105,8 +82,75 @@ class ShowFeatures(pipeline.ProcessObject):
         cv2.rectangle(input, (int(x-r), int(y-r)), (int(x+r), int(y+r)), (255,0,0), thickness=2)
         self.getOutput(0).setData(input)
 
+def average_images(filenames):
+    """
+        Return a numpy image of the averaged images from the filenames.
+    """
+    num_images = len(filenames)
+
+    # Use a pipeline object to read all the images into a buffer
+    images = source.FileStackReader(filenames)
+    avg_buffer = avgimage.AvgImage(buffer_size = num_images)
+    for i in range(num_images):
+        images.update()
+        image = (images.getOutput()).getData()
+        avg_buffer.add_image( image )
+        images.increment()
+
+    # Return the average of all frames in the buffer (a numpy image)
+    return avg_buffer.get_avg_image()
+    
+
+def fish_identification():
+    """
+        Identify whether or not the fish is in the image by using background
+        subtraction
+        
+        If the mean absolute intensity exceeds a given threshold, we conclude
+        that the fish is present (and if does not exceed the threshould,
+        absent).
+    """
+
+    # All frames in the data set
+    all_frame_fns = sorted(glob.glob("fish-74.2/*.tif"))
+
+    # A list of all frames where the goldfish and its shadow are absent
+    bg_frame_fns = sorted(glob.glob("fish-74.2/blanks/*.tif"))
+    avg_bg = average_images(bg_frame_fns)
+
+    all_images = source.FileStackReader(all_frame_fns)
+    display = Display(all_images.getOutput(), "Testosterone-laden fish")
+    fish_presence = BackgroundSubtraction(all_images.getOutput(), avg_bg, 2.0)
+
+    # Display video, gather data about fish's presence, abs mean value
+    intensity_data = []
+    prev_frame = None
+    key = None
+    while (key != 27) and (all_images.getFrameName() != prev_frame):
+        all_images.update()
+        display.update()
+        fish_presence.update()
+
+        # Get data about the fish's presence, append to list
+        fish_present = fish_presence.getOutput(0)
+        avg_val = fish_presence.getOutput(1)
+        intensity_data.append( (avg_val, all_images.getFrameName(), fish_present) )
+
+        # Read the key, get ready for the next image
+        all_images.increment()
+        key = cv2.waitKey(20)
+        key &= 255
+
+    # Create a CSV of sorted images and their intensity
+    # (useful in determining if the threshold was reasonable)
+    intensity_out = csv.writer(open("image-bg_values.csv", "wb"))
+    for (value, frame_name, fish_present) in sorted(intensity_data):
+        intensity_out.writerow( [frame_name, value, fish_present] )
 
 def particle_filter_test():
+    """
+        Test the particle filter, tracking the eyeball of the fish.
+    """
     patch_n = 20
     
     frames = sorted(glob.glob("fish-83.2/*.tif"))
@@ -116,8 +160,6 @@ def particle_filter_test():
     p_filter = particle_filter.Particle_Filter(src.getOutput(), numpy.array([102,123]), patch_n, 100)
     features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)
     display2 = Display(features.getOutput(), "Eye_Tracking?")
-    
-    
     
     key = None
     frame = 0
@@ -130,17 +172,16 @@ def particle_filter_test():
         features.update()
         display2.update()
         
-        
-        
         frame += 1
         print "Frame: %d" % (frame)
         
 
         key = cv2.waitKey(10)
         key &= 255
-    
-
         
 if __name__ == "__main__":
+    """
+        Test the particle filter
+    """
     particle_filter_test()
 

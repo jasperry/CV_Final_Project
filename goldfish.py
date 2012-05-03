@@ -17,6 +17,8 @@ import numpy
 import avgimage
 import pipeline
 import source
+import color
+import particle_filter
 
 class Display(pipeline.ProcessObject):
     """
@@ -62,10 +64,11 @@ class BackgroundSubtraction(pipeline.ProcessObject):
 
         self.setOutput(fish_present, 0)
         self.setOutput(diff.mean(), 1)
-        
-if __name__ == "__main__":
 
-    # All frames in the dataset
+
+def background_subtraction():
+
+    # All frames in the data set
     all_frame_fns = sorted(glob.glob("fish-74.2/*.tif"))
 
     # A list of all frames where the goldfish and its shadow are absent
@@ -84,10 +87,7 @@ if __name__ == "__main__":
 
     # Create a numpy image that is the average of all background frames
     avg_bg = bg_frames.get_avg_image()
-
-
-
-    #all_frame_fns = ["fish-74.2/fish-74.2-000002.tif"] # fish frame - 1.76
+    
 
     all_images = source.FileStackReader(all_frame_fns)
     display = Display(all_images.getOutput(), "Testosterone-laden fish")
@@ -115,3 +115,61 @@ if __name__ == "__main__":
     intensity_out = csv.writer(open("image-bg_values.csv", "wb"))
     for (value, frame_name, fish_present) in sorted(intensity_data):
         intensity_out.writerow( [frame_name, value, fish_present] )
+
+class ShowFeatures(pipeline.ProcessObject):
+    '''
+    Draws boxes around the features in an image
+    '''
+    def __init__(self, input = None, features = None, n = None):
+        pipeline.ProcessObject.__init__(self, input, 2)
+        self.setInput(features, 1)
+        self.r = n/2.
+        
+    def generateData(self):
+        input = self.getInput(0).getData()
+        feature = self.getInput(1).getData()
+        x = feature[1]
+        y = feature[0]
+        r = self.r
+        cv2.rectangle(input, (int(x-r), int(y-r)), (int(x+r), int(y+r)), (255,0,0), thickness=2)
+        self.getOutput(0).setData(input)
+
+
+def particle_filter_test():
+    patch_n = 20
+    
+    frames = sorted(glob.glob("fish-83.2/*.tif"))
+    raw = source.FileStackReader(frames)
+    src = color.Grayscale(raw.getOutput())
+    display = Display(src.getOutput(), "Testosterone Laden Goldfish")
+    p_filter = particle_filter.Particle_Filter(src.getOutput(), numpy.array([102,123]), patch_n, 100)
+    features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)
+    display2 = Display(features.getOutput(), "Eye_Tracking?")
+    
+    
+    
+    key = None
+    frame = 0
+    while key != 27:
+        raw.update()
+        raw.increment()
+        src.update()
+        display.update()
+        p_filter.update()
+        features.update()
+        display2.update()
+        
+        
+        
+        frame += 1
+        print "Frame: %d" % (frame)
+        
+
+        key = cv2.waitKey(10)
+        key &= 255
+    
+
+        
+if __name__ == "__main__":
+    particle_filter_test()
+    # A list of all the goldfish-free frames

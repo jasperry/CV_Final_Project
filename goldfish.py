@@ -2,13 +2,13 @@
 
 # David Cain
 # Justin Sperry
-# 2012-04-25
+# 2012-05-02
 # CS365, Brian Eastwood
 
 import os
  
 import glob
-from scipy import ndimage
+#from scipy import ndimage
 import cv
 import cv2
 import numpy
@@ -62,21 +62,10 @@ class BackgroundSubtraction(pipeline.ProcessObject):
         self.getOutput(0).setData(fish_present)
         
 if __name__ == "__main__":
-    #cam = cv2.VideoCapture(0)
-    avi_filename = "83.avi"
-    blank_frames_dir = "blanks"
 
-    if not os.path.isdir(blank_frames_dir):
-        os.makedirs(blank_frames_dir)
-    num = 11 # We already have 10 frames
-
-    assert os.path.isfile(avi_filename)
-    key = None
-
-    video_stream = source.VideoCV(avi_filename)
+    '''
     display = Display(video_stream.getOutput(), "Testosterone-laden fish")
     fish_presence = BackgroundSubtraction(video_stream.getOutput())
-
 
     while key != 27:
         video_stream.update()
@@ -85,33 +74,21 @@ if __name__ == "__main__":
 
         key = cv2.waitKey(10)
         key &= 255
-
-
-    '''
-    cam = cv2.VideoCapture(avi_filename)
-    while key != 27:
-        # grab a frame from the camera
-        flag, frame = cam.read()
-
-        # If space is pressed, save new background image
-        if key == 32:
-            fn = os.path.join(blank_frames_dir, "%.3i.npy" % num)
-            numpy.save(fn, frame)
-            num += 1
-        
-        # display the frame in a window
-        cv2.imshow("camera", frame)
-        key = cv2.waitKey(20) & 255
     '''
 
+    # A list of all the goldfish-free frames
+    bg_frame_fns = glob.glob("fish-74.2/blanks/*.tif")
 
-    '''
-    # Read in the bg frames, average them, and save to a numpy image
-    bg_frames = avgimage.AvgImage(buffer_size = 10)
-    for image_fn in glob.glob( os.path.join(blank_frames_dir, "*.npy") ):
-        image = numpy.load(image_fn)
-        bg_frames.add_image(image)
+    # Use pipeline object to read background frames, an object to average them
+    bg_images = source.FileStackReader(bg_frame_fns)
+    bg_frames = avgimage.AvgImage(buffer_size = len(bg_frame_fns))
 
-    bg = bg_frames.get_avg_image()
-    numpy.save("bg.npy", bg)
-    '''
+    # Add all the background frames to the average image object
+    for i in range(len(bg_frame_fns)):
+        bg_images.update()
+        image = (bg_images.getOutput()).getData()
+        bg_frames.add_image( image )
+        bg_images.increment()
+
+    # Create a numpy image that is the average of all background frames
+    average_background = bg_frames.get_avg_image()

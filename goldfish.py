@@ -82,6 +82,25 @@ class ShowFeatures(pipeline.ProcessObject):
         cv2.rectangle(input, (int(x-r), int(y-r)), (int(x+r), int(y+r)), (255,0,0), thickness=2)
         self.getOutput(0).setData(input)
 
+def average_images(filenames):
+    """
+        Return a numpy image of the averaged images from the filenames.
+    """
+    num_images = len(filenames)
+
+    # Use a pipeline object to read all the images into a buffer
+    images = source.FileStackReader(filenames)
+    avg_buffer = avgimage.AvgImage(buffer_size = num_images)
+    for i in range(num_images):
+        images.update()
+        image = (images.getOutput()).getData()
+        avg_buffer.add_image( image )
+        images.increment()
+
+    # Return the average of all frames in the buffer (a numpy image)
+    return avg_buffer.get_avg_image()
+    
+
 def fish_identification():
     """
         Identify whether or not the fish is in the image by using background
@@ -98,21 +117,8 @@ def fish_identification():
     # A list of all frames where the goldfish and its shadow are absent
     bg_frame_fns = sorted(glob.glob("fish-74.2/blanks/*.tif"))
 
-    # Use pipeline object to read background frames, an object to average them
-    bg_images = source.FileStackReader(bg_frame_fns)
-    bg_frames = avgimage.AvgImage(buffer_size = len(bg_frame_fns))
+    avg_bg = average_images(bg_frame_fns)
 
-    # Add all the background frames to the average image object
-    for i in range(len(bg_frame_fns)):
-        bg_images.update()
-        image = (bg_images.getOutput()).getData()
-        bg_frames.add_image( image )
-        bg_images.increment()
-
-    # Create a numpy image that is the average of all background frames
-    avg_bg = bg_frames.get_avg_image()
-    
-    # 
     all_images = source.FileStackReader(all_frame_fns)
     display = Display(all_images.getOutput(), "Testosterone-laden fish")
     fish_presence = BackgroundSubtraction(all_images.getOutput(), avg_bg, 2.0)

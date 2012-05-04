@@ -112,16 +112,14 @@ def average_images(filenames):
     """
         Return a numpy image of the averaged images from the filenames.
     """
-    num_images = len(filenames)
-
     # Use a pipeline object to read all the images into a buffer
-    images = source.FileStackReader(filenames)
-    avg_buffer = avgimage.AvgImage(buffer_size = num_images)
-    for i in range(num_images):
-        images.update()
-        image = (images.getOutput()).getData()
+    image_reader = source.FileStackReader(filenames)
+    avg_buffer = avgimage.AvgImage(buffer_size = image_reader.getLength())
+    for i in range(avg_buffer.get_buffer_size()):
+        image_reader.update()
+        image = (image_reader.getOutput()).getData()
         avg_buffer.add_image( image )
-        images.increment()
+        image_reader.increment()
 
     # Return the average of all frames in the buffer (a numpy image)
     return avg_buffer.get_avg_image()

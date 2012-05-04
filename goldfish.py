@@ -79,7 +79,8 @@ class ShowFeatures(pipeline.ProcessObject):
         x = feature[1]
         y = feature[0]
         r = self.r
-        cv2.rectangle(input, (int(x-r), int(y-r)), (int(x+r), int(y+r)), (255,0,0), thickness=2)
+        cv2.rectangle(input, (int(x-r), int(y-r)), (int(x+r), int(y+r)),
+                (255,0,0), thickness=2)
         self.getOutput(0).setData(input)
 
 def average_images(filenames):
@@ -158,8 +159,10 @@ def particle_filter_test():
     src = color.Grayscale(raw.getOutput())
     display = Display(src.getOutput(), "Testosterone Laden Goldfish")
     blobs = particle_filter.DifferenceOfGaussian(src.getOutput())
-    p_filter = particle_filter.Particle_Filter(blobs.getOutput(), numpy.array([102,123]), patch_n, 100)
-    #p_filter3 = particle_filter.Particle_Filter(src.getOutput(), numpy.array([102,123]), patch_n, 100, True)
+    p_filter = particle_filter.Particle_Filter(blobs.getOutput(),
+            numpy.array([102,123]), patch_n, 100)
+    #p_filter3 = particle_filter.Particle_Filter(src.getOutput(),
+    #       numpy.array([102,123]), patch_n, 100, True)
     features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)
     #features3 = ShowFeatures(src.getOutput(), p_filter3.getOutput(), patch_n)
     display2 = Display(features.getOutput(), "Eye_Tracking")
@@ -181,15 +184,11 @@ def particle_filter_test():
         
         frame += 1
         print "Frame: %d" % (frame)
-        
 
         key = cv2.waitKey(10)
         key &= 255
 
-
-
 def subtract_and_track():
-
 
     patch_n = 20
     
@@ -197,11 +196,12 @@ def subtract_and_track():
     raw = source.FileStackReader(frames)
     src = color.Grayscale(raw.getOutput())
     fish = BackgroundSubtraction(src.getOutput())
-    display = Display(fish.getOutput(1), "Testosterone Laden Goldfish")
+    display = Display(fish.getOutput(1), "Testosterone-laden Goldfish")
     blobs = particle_filter.DifferenceOfGaussian(src.getOutput(1))
-    p_filter = particle_filter.Particle_Filter(blobs.getOutput(), numpy.array([102,123]), patch_n, 100)
+    p_filter = particle_filter.Particle_Filter(blobs.getOutput(),
+            numpy.array([102,123]), patch_n, 100)
     features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)
-    display2 = Display(features.getOutput(), "Eye_Tracking")
+    display2 = Display(features.getOutput(), "Eye Tracking")
     display3 =Display(blobs.getOutput(), "DoG")
     
     key = None
@@ -222,6 +222,8 @@ def subtract_and_track():
 
         key = cv2.waitKey(10)
         key &= 255
+
+
 if __name__ == "__main__":
     """
         Test the particle filter

@@ -20,7 +20,7 @@ Input(1) = Last Position of objects to be tracked
 class Particle_Filter(pipeline.ProcessObject):
 
 
-    def __init__(self, input = None, pos = None, stepsize = None, n = None, best = False):
+    def __init__(self, input=None, pos=None, stepsize=None, n=None, best=False):
         pipeline.ProcessObject.__init__(self, input)
 
         self.start_position = pos
@@ -29,8 +29,6 @@ class Particle_Filter(pipeline.ProcessObject):
         self.x = numpy.ones((n,2), int) * pos
         self.hist = None
         self.best = best
-
-
 
     def generateData(self):
 
@@ -70,15 +68,14 @@ class Particle_Filter(pipeline.ProcessObject):
                 self.x = self.x[self.resample(w),:]
 
 
-
-
     def resample(self, weights):
+        # TODO: j never initialized
         n = len(weights)
         indices = []
         c = [0.] + [sum(weights[:i+1]) for i in range(n)]
         u0 = numpy.random()
         for u in [(u0+i)/n for i in range(n)]:
-            while u > C[j]:
+            while u > c[j]:
                 j+=1
             indices.append(j-1)
         return indices    
@@ -133,7 +130,6 @@ def test_particle_filter():
     import glob
 
     files = glob.glob("path")
-
 
 
 if __name__ == "__main__":

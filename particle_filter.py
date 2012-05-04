@@ -2,8 +2,8 @@ import cv
 import cv2
 import numpy
 import pipeline
-from scipy import ndimage 
-
+from scipy import ndimage
+from scipy.ndimage import filters
 
 
 '''
@@ -20,7 +20,7 @@ Input(1) = Last Position of objects to be tracked
 class Particle_Filter(pipeline.ProcessObject):
 
 
-	def __init__(self, input = None, pos = None, stepsize = None, n = None):
+	def __init__(self, input = None, pos = None, stepsize = None, n = None, best = False):
 		pipeline.ProcessObject.__init__(self, input)
 		
 		self.start_position = pos
@@ -28,6 +28,7 @@ class Particle_Filter(pipeline.ProcessObject):
 		self.n = n
 		self.x = numpy.ones((n,2), int) * pos
 		self.hist = None
+		self.best = best
 		
 		
 		
@@ -52,12 +53,13 @@ class Particle_Filter(pipeline.ProcessObject):
 			w = self.get_weights(new_hist, self.hist)
 			w /= numpy.sum(w)
 			
-			#sums the weighted particle positions
-			new_pos = numpy.sum(self.x.T*w, axis = 1)
+			if self.best:
+				#picks the location of the best particle
+				new_pos = self.x[numpy.argmax(w),:]
 			
-			
-			#picks the location of the best particle
-			#new_pos = self.x[numpy.argmax(w),:]
+			else:
+				#sums the weighted particle positions
+				new_pos = numpy.sum(self.x.T*w, axis = 1)
 			
 			
 			self.getOutput(0).setData(new_pos)
@@ -108,8 +110,23 @@ class Particle_Filter(pipeline.ProcessObject):
 	#bhattacharyya distance metric
 	def bhattacharyya(self,v1, v2):
 		return -numpy.log((numpy.sqrt(v1*v2)).sum())
-	
-	
+
+
+'''
+Implements a difference of two Gaussians with different sigma to accentuate
+The blob-like eye to track
+'''
+class DifferenceOfGaussian(pipeline.ProcessObject):
+    def __init__(self, input=None):
+        super(DifferenceOfGaussian, self).__init__(input)
+   
+    def generateData(self):
+        input = self.getInput().getData().astype(numpy.float32)
+       
+        gI1 = filters.gaussian_filter(input, 1.2, 0)
+        gI2 = filters.gaussian_filter(input, 2.0, 0)
+        output = gI2 - gI1
+        self.getOutput().setData(output)
 
 
 def test_particle_filter():

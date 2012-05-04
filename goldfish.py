@@ -157,9 +157,52 @@ def particle_filter_test():
     raw = source.FileStackReader(frames)
     src = color.Grayscale(raw.getOutput())
     display = Display(src.getOutput(), "Testosterone Laden Goldfish")
-    p_filter = particle_filter.Particle_Filter(src.getOutput(), numpy.array([102,123]), patch_n, 100)
+    blobs = particle_filter.DifferenceOfGaussian(src.getOutput())
+    p_filter = particle_filter.Particle_Filter(blobs.getOutput(), numpy.array([102,123]), patch_n, 100)
+    #p_filter3 = particle_filter.Particle_Filter(src.getOutput(), numpy.array([102,123]), patch_n, 100, True)
     features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)
-    display2 = Display(features.getOutput(), "Eye_Tracking?")
+    #features3 = ShowFeatures(src.getOutput(), p_filter3.getOutput(), patch_n)
+    display2 = Display(features.getOutput(), "Eye_Tracking")
+    display3 =Display(blobs.getOutput(), "DoG")
+    
+    key = None
+    frame = 0
+    while key != 27:
+        raw.update()
+        raw.increment()
+        src.update()
+        display.update()
+        p_filter.update()
+        #p_filter3.update()
+        #features3.update()
+        features.update()
+        display2.update()
+        display3.update()
+        
+        frame += 1
+        print "Frame: %d" % (frame)
+        
+
+        key = cv2.waitKey(10)
+        key &= 255
+
+
+
+def subtract_and_track():
+
+
+    patch_n = 20
+    
+    frames = sorted(glob.glob("fish-83.2/*.tif"))
+    raw = source.FileStackReader(frames)
+    src = color.Grayscale(raw.getOutput())
+    fish = BackgroundSubtraction(src.getOutput())
+    display = Display(fish.getOutput(1), "Testosterone Laden Goldfish")
+    blobs = particle_filter.DifferenceOfGaussian(src.getOutput(1))
+    p_filter = particle_filter.Particle_Filter(blobs.getOutput(), numpy.array([102,123]), patch_n, 100)
+    features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)
+    display2 = Display(features.getOutput(), "Eye_Tracking")
+    display3 =Display(blobs.getOutput(), "DoG")
     
     key = None
     frame = 0
@@ -171,6 +214,7 @@ def particle_filter_test():
         p_filter.update()
         features.update()
         display2.update()
+        display3.update()
         
         frame += 1
         print "Frame: %d" % (frame)
@@ -178,7 +222,6 @@ def particle_filter_test():
 
         key = cv2.waitKey(10)
         key &= 255
-        
 if __name__ == "__main__":
     """
         Test the particle filter

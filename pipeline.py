@@ -39,7 +39,7 @@ class ProcessObject(object):
     initialized.
     '''
     
-    def __init__(self, input=None, inputCount=1, outputCount=1):
+    def __init__(self, inpt=None, inputCount=1, outputCount=1):
         '''
         Initialize this ProcessObject with empty input and output lists.
         '''
@@ -55,8 +55,8 @@ class ProcessObject(object):
         self._timeModified = time.time()
         self._timeUpdated = self._timeModified - 1
         
-        if input is not None:
-            self.setInput(input, 0)
+        if inpt is not None:
+            self.setInput(inpt, 0)
         
     def modified(self):
         '''
@@ -202,7 +202,7 @@ class Image(ProcessObject):
         Initialize the image.  The parent is a ProcessObject responsible for
         updating the data for this Image.
         '''
-        super(Image, self).__init__(input=parent, outputCount=0)
+        super(Image, self).__init__(inpt=parent, outputCount=0)
         self._data = data
     
     def getData(self):

@@ -24,33 +24,33 @@ class Display(pipeline.ProcessObject):
         Pipeline object to display the numpy image in a CV window
     """
     
-    def __init__(self, input=None, name="pipeline"):
-        pipeline.ProcessObject.__init__(self, input)
+    def __init__(self, inpt=None, name="pipeline"):
+        pipeline.ProcessObject.__init__(self, inpt)
         cv2.namedWindow(name, cv.CV_WINDOW_NORMAL)
         self.name = name
         
     def generateData(self):
-        input = self.getInput(0).getData()
+        inpt = self.getInput(0).getData()
 
-        assert input is not None, "Can't display! Image is null"
+        assert inpt is not None, "Can't display! Image is null"
         # output here so channels don't get flipped
-        self.getOutput(0).setData(input)
+        self.getOutput(0).setData(inpt)
 
         # Convert back to OpenCV BGR from RGB
-        if input.ndim == 3 and input.shape[2] == 3:
-            input = input[..., ::-1]
+        if inpt.ndim == 3 and inpt.shape[2] == 3:
+            inpt = inpt[..., ::-1]
         
-        cv2.imshow(self.name, input.astype(numpy.uint8))        
+        cv2.imshow(self.name, inpt.astype(numpy.uint8))        
 
 
 class BackgroundSubtraction(pipeline.ProcessObject):
     """
         Segments the bacteria colonies in the images.
 
-        input: a pipeline.Image object
+        inpt: a pipeline.Image object
     """
-    def __init__(self, input=None, bgImg=None, threshold=2.0):
-        pipeline.ProcessObject.__init__(self, input, outputCount=3)
+    def __init__(self, inpt=None, bgImg=None, threshold=2.0):
+        pipeline.ProcessObject.__init__(self, inpt, outputCount=3)
         self.bgImg = bgImg
         self.threshold = threshold
     
@@ -65,9 +65,9 @@ class BackgroundSubtraction(pipeline.ProcessObject):
             image of this difference.
         """
 
-        input = self.getInput(0).getData()
+        inpt = self.getInput(0).getData()
         #background subtraction
-        diff = abs(input.astype(numpy.float) - self.bgImg.astype(numpy.float))
+        diff = abs(inpt.astype(numpy.float) - self.bgImg.astype(numpy.float))
         fish_present = diff.mean() > self.threshold
 
         self.setOutput(fish_present, 0)
@@ -78,20 +78,20 @@ class ShowFeatures(pipeline.ProcessObject):
     """
         Draws boxes around the features in an image
     """
-    def __init__(self, input = None, features = None, n = None):
-        pipeline.ProcessObject.__init__(self, input, 2)
+    def __init__(self, inpt=None, features=None, n=None):
+        pipeline.ProcessObject.__init__(self, inpt, 2)
         self.setInput(features, 1)
         self.r = n/2.
         
     def generateData(self):
-        input = self.getInput(0).getData()
+        inpt = self.getInput(0).getData()
         feature = self.getInput(1).getData()
         x = feature[1]
         y = feature[0]
         r = self.r
-        cv2.rectangle(input, (int(x-r), int(y-r)), (int(x+r), int(y+r)),
+        cv2.rectangle(inpt, (int(x-r), int(y-r)), (int(x+r), int(y+r)),
                 (255,0,0), thickness=2)
-        self.getOutput(0).setData(input)
+        self.getOutput(0).setData(inpt)
 
 def average_images(filenames):
     """

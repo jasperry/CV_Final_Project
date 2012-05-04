@@ -20,8 +20,8 @@ Input(1) = Last Position of objects to be tracked
 class Particle_Filter(pipeline.ProcessObject):
 
 
-    def __init__(self, input=None, pos=None, stepsize=None, n=None, best=False):
-        pipeline.ProcessObject.__init__(self, input)
+    def __init__(self, inpt=None, pos=None, stepsize=None, n=None, best=False):
+        pipeline.ProcessObject.__init__(self, inpt)
 
         self.start_position = pos
         self.stepsize = stepsize
@@ -32,11 +32,11 @@ class Particle_Filter(pipeline.ProcessObject):
 
     def generateData(self):
 
-        input = self.getInput(0).getData()
+        inpt = self.getInput(0).getData()
 
         #if there is no histogram for the initial object to be tracked, grab one
         if self.hist == None:
-            self.hist = self.make_histogram(input, self.x, self.stepsize)
+            self.hist = self.make_histogram(inpt, self.x, self.stepsize)
             self.getOutput().setData(self.start_position)
 
         else:
@@ -44,8 +44,8 @@ class Particle_Filter(pipeline.ProcessObject):
             #perturb particles, clip for size, make histograms for each particle
             self.x += numpy.random.uniform(-self.stepsize, self.stepsize, self.x.shape)
             #clip to get that damn wall out of there
-            self.x = self.x.clip(numpy.array([0,103]), numpy.array(input.shape)-1).astype(int)
-            new_hist = self.make_histogram(input, self.x, self.stepsize)
+            self.x = self.x.clip(numpy.array([0,103]), numpy.array(inpt.shape)-1).astype(int)
+            new_hist = self.make_histogram(inpt, self.x, self.stepsize)
 
             #calculate weights (as battacharyya distances)
             w = self.get_weights(new_hist, self.hist)
@@ -114,14 +114,14 @@ Implements a difference of two Gaussians with different sigma to accentuate
 The blob-like eye to track
 '''
 class DifferenceOfGaussian(pipeline.ProcessObject):
-    def __init__(self, input=None):
-        super(DifferenceOfGaussian, self).__init__(input)
+    def __init__(self, inpt=None):
+        super(DifferenceOfGaussian, self).__init__(inpt)
 
     def generateData(self):
-        input = self.getInput().getData().astype(numpy.float32)
+        inpt = self.getInput().getData().astype(numpy.float32)
 
-        gI1 = filters.gaussian_filter(input, 1.2, 0)
-        gI2 = filters.gaussian_filter(input, 2.0, 0)
+        gI1 = filters.gaussian_filter(inpt, 1.2, 0)
+        gI2 = filters.gaussian_filter(inpt, 2.0, 0)
         output = gI2 - gI1
         self.getOutput().setData(output)
 

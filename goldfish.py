@@ -2,7 +2,7 @@
 
 # David Cain
 # Justin Sperry
-# 2012-05-02
+# 2012-05-04
 # CS365, Brian Eastwood
 
 import csv
@@ -30,9 +30,13 @@ class Display(pipeline.ProcessObject):
         self.name = name
         
     def generateData(self):
+        """
+            Get the next input, adjust its color channels accordingly,
+            and display the results in an openCV window
+        """
         inpt = self.getInput(0).getData()
-
         assert inpt is not None, "Can't display! Image is null"
+
         # output here so channels don't get flipped
         self.getOutput(0).setData(inpt)
 
@@ -48,6 +52,9 @@ class BackgroundSubtraction(pipeline.ProcessObject):
         Segments the bacteria colonies in the images.
 
         inpt: a pipeline.Image object
+        threshold: the minimum absolute mean difference to consider the
+            fish as part of the image (2.0 is a good value, can be
+            tweaked to any threshold, though)
     """
     def __init__(self, inpt=None, bgImg=None, threshold=2.0):
         pipeline.ProcessObject.__init__(self, inpt, outputCount=3)
@@ -59,14 +66,15 @@ class BackgroundSubtraction(pipeline.ProcessObject):
             Perform background subtraction on the image, segment the
             bacteria colonies (foreground) from the background data.
 
-            Sets the output to include a boolean value indicating the
-            fish's presence in the frame, the absolute mean value of
-            pixel differences of the frame and background, and a mask
-            image of this difference.
+            Outputs:
+                [0] = <boolean> true if fish present in frame
+                [1] = <float> absolute mean value of pixel differences
+                      of the frame and background image.
+                [2] = Image object containing mask image of difference
         """
-
         inpt = self.getInput(0).getData()
-        #background subtraction
+
+        # Perform a pixel-by-pixel absolute background subtraction
         diff = abs(inpt.astype(numpy.float) - self.bgImg.astype(numpy.float))
         fish_present = diff.mean() > self.threshold
 
@@ -77,6 +85,10 @@ class BackgroundSubtraction(pipeline.ProcessObject):
 class ShowFeatures(pipeline.ProcessObject):
     """
         Draws boxes around the features in an image
+
+        inpt: The input image to draw on
+        features: an (x,y) tuple of the feature center
+            TODO: list of features?
     """
     def __init__(self, inpt=None, features=None, n=None):
         pipeline.ProcessObject.__init__(self, inpt, 2)
@@ -84,6 +96,9 @@ class ShowFeatures(pipeline.ProcessObject):
         self.r = n/2.
         
     def generateData(self):
+        """
+            Draw a rectangle at the feature location
+        """
         inpt = self.getInput(0).getData()
         feature = self.getInput(1).getData()
         x = feature[1]
@@ -176,7 +191,7 @@ def particle_filter_test():
     features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)
     #features3 = ShowFeatures(src.getOutput(), p_filter3.getOutput(), patch_n)
     display2 = Display(features.getOutput(), "Eye_Tracking")
-    display3 =Display(blobs.getOutput(), "DoG")
+    display3 = Display(blobs.getOutput(), "DoG")
 
 
     # Get averaged background image

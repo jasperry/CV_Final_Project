@@ -31,6 +31,8 @@ class Display(pipeline.ProcessObject):
         
     def generateData(self):
         input = self.getInput(0).getData()
+
+        assert input is not None, "Can't display! Image is null"
         # output here so channels don't get flipped
         self.getOutput(0).setData(input)
 
@@ -44,9 +46,11 @@ class Display(pipeline.ProcessObject):
 class BackgroundSubtraction(pipeline.ProcessObject):
     """
         Segments the bacteria colonies in the images.
+
+        input: a pipeline.Image object
     """
     def __init__(self, input=None, bgImg=None, threshold=2.0):
-        pipeline.ProcessObject.__init__(self, input, outputCount=2)
+        pipeline.ProcessObject.__init__(self, input, outputCount=3)
         self.bgImg = bgImg
         self.threshold = threshold
     
@@ -54,6 +58,11 @@ class BackgroundSubtraction(pipeline.ProcessObject):
         """
             Perform background subtraction on the image, segment the
             bacteria colonies (foreground) from the background data.
+
+            Sets the output to include a boolean value indicating the
+            fish's presence in the frame, the absolute mean value of
+            pixel differences of the frame and background, and a mask
+            image of this difference.
         """
 
         input = self.getInput(0).getData()
@@ -63,6 +72,7 @@ class BackgroundSubtraction(pipeline.ProcessObject):
 
         self.setOutput(fish_present, 0)
         self.setOutput(diff.mean(), 1)
+        self.getOutput(2).setData(diff)
 
 class ShowFeatures(pipeline.ProcessObject):
     """
@@ -167,12 +177,21 @@ def particle_filter_test():
     #features3 = ShowFeatures(src.getOutput(), p_filter3.getOutput(), patch_n)
     display2 = Display(features.getOutput(), "Eye_Tracking")
     display3 =Display(blobs.getOutput(), "DoG")
+
+
+    # Get averaged background image
+    bg_frame_fns = sorted(glob.glob("fish-83.2/blanks/*.tif"))
+    avg_bg = average_images(bg_frame_fns)
+
+    print raw.getOutput()
+    fish_presence = BackgroundSubtraction(raw.getOutput(), avg_bg, 2.0)
+
+    display4 = Display(fish_presence.getOutput(2), "Fish background subtraction")
     
     key = None
     frame = 0
     while key != 27:
         raw.update()
-        raw.increment()
         src.update()
         display.update()
         p_filter.update()
@@ -181,12 +200,16 @@ def particle_filter_test():
         features.update()
         display2.update()
         display3.update()
+
+        fish_presence.update()
+        display4.update()
         
         frame += 1
         print "Frame: %d" % (frame)
 
         key = cv2.waitKey(10)
         key &= 255
+        raw.increment()
 
 def subtract_and_track():
 
@@ -202,7 +225,7 @@ def subtract_and_track():
             numpy.array([102,123]), patch_n, 100)
     features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)
     display2 = Display(features.getOutput(), "Eye Tracking")
-    display3 =Display(blobs.getOutput(), "DoG")
+    display3 = Display(blobs.getOutput(), "DoG")
     
     key = None
     frame = 0

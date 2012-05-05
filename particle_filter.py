@@ -20,7 +20,7 @@ Input(1) = Last Position of objects to be tracked
 '''
 class Particle_Filter(pipeline.ProcessObject):
 
-    def __init__(self, input = None, mask = None, pos = None, stepsize = None, n = None, best = False):
+    def __init__(self, input=None, mask=None, pos=None, stepsize=None, n=None, best=False):
         pipeline.ProcessObject.__init__(self, input, 2)
         
         self.pos = pos
@@ -87,8 +87,6 @@ class Particle_Filter(pipeline.ProcessObject):
             
             if 1./sum(w**2) < self.n/2.:
                 self.x = self.x[self.resample(w),:]
-            
-            
             
     
     def resample(self, weights):

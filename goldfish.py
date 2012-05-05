@@ -47,20 +47,29 @@ class Display(pipeline.ProcessObject):
         cv2.imshow(self.name, inpt.astype(numpy.uint8))        
 
 
-class BackgroundSubtraction(pipeline.ProcessObject):
+class LocateFish(pipeline.ProcessObject):
     """
-        Segments the bacteria colonies in the images.
+        Segment the goldfish from the rest of the tank.
 
-        inpt: a pipeline.Image object
+        This class does a good job of separating the fish from its shadow and
+        other particles floating through the tank, except when the fish is
+        towards the bottom of the tank. 
+
+        inpt: a grayscale pipeline.Image object
         threshold: the minimum absolute mean difference to consider the
             fish as part of the image (2.0 is a good value, can be
             tweaked to any threshold, though)
+        isolate_fish: use morphological operations to return a mask
+            where we've attempted to isolate the fish, open its mask to
+            cover its entire body, and dilate slightly past its edges.
     """
-    def __init__(self, inpt=None, bgImg=None, threshold=2.0):
+    def __init__(self, inpt, bgImg, threshold=2.0, isolate_fish=True):
         pipeline.ProcessObject.__init__(self, inpt, outputCount=3)
+        assert bgImg.shape == 2 # make sure it's an x,y grid of booleans
         self.bgImg = bgImg
         self.threshold = threshold
         self.binary = numpy.zeros(bgImg.shape)
+        self.isolate_fish = isolate_fish
     
     def generateData(self):
         """
@@ -68,10 +77,10 @@ class BackgroundSubtraction(pipeline.ProcessObject):
             bacteria colonies (foreground) from the background data.
 
             Outputs:
-                [0] = <boolean> true if fish present in frame
-                [1] = <float> absolute mean value of pixel differences
+                [0] = Image object containing mask image of difference
+                [1] = <boolean> true if fish present in frame
+                [2] = <float> absolute mean value of pixel differences
                       of the frame and background image.
-                [2] = Image object containing mask image of difference
         """
         inpt = self.getInput(0).getData()
 
@@ -79,22 +88,42 @@ class BackgroundSubtraction(pipeline.ProcessObject):
         diff = abs(inpt.astype(numpy.float) - self.bgImg.astype(numpy.float))
         fish_present = diff.mean() > self.threshold
 
-        self.setOutput(fish_present, 0)
-        self.setOutput(diff.mean(), 1)
+        # We use the frame and background difference to conclude if the
+        # fish is present, saving this value as a metric of confidence
+        self.setOutput(fish_present, 1)
+        self.setOutput(diff.mean(), 2)
 
-        tempBinary = numpy.zeros(self.bgImg.shape)
+        # Initialize arrays that tell us where the fish is (1 == foreground)
+        binary_img = numpy.zeros(self.bgImg.shape)
+        fishmask = binary_img
 
-        tempBinary[diff > 10] = 1
-        tempBinary[:,:103] = 0 # Manually exclude the wall
+        # Create a binary image where 1's indicate a significant
+        # difference from the background image
+        binary_img[diff > 10] = 1
+        binary_img[:,:103] = 0 # Manually exclude the wall
 
-        #output = (inpt.astype(numpy.float) - self.bgImg.astype(numpy.float))
-        #tempBinary[output < -5] = 1
-        
-        #tempBinary = ndimage.morphology.binary_opening(tempBinary, iterations = 5)
-        #self.binary = numpy.logical_or(self.binary, tempBinary).astype(numpy.uint8)
+        # Use morphological operations to isolate the fish from other data
+        if self.isolate_fish:
 
-        assert tempBinary.ndim == 2 # Make sure we have just an intensity channel
-        self.getOutput(2).setData(tempBinary*255)
+            # Open the image to fill the fish's body, eliminate small noise
+            binary_img = ndimage.morphology.binary_opening(binary_img,
+                    numpy.ones( (2,2) ), iterations=2)
+            # Extra dilation to ensure we extend a bit past fish's body
+            binary_img = ndimage.morphology.binary_dilation(binary_img,
+                    iterations=3)
+            
+            # Divide the image into connected components (e.g. the fish and two
+            # shadows below it)
+            (labels, num_components) = ndimage.measurements.label(binary_img)
+            labels = labels.reshape(binary_img.shape)
+
+            # Exploit the fact that the fish is always above its shadows to
+            # restrict the image to just the top connected component
+            fishmask = numpy.zeros(binary_img.shape)
+            fishmask[labels==1] = 1 # Highest group always indexed to 1
+
+        assert fishmask.ndim == 2 # make sure it's an x,y grid of booleans
+        self.getOutput(0).setData(fishmask*255)
 
 
 class ShowFeatures(pipeline.ProcessObject):
@@ -165,7 +194,7 @@ def fish_identification():
     raw = source.FileStackReader(all_frame_fns)
     src = color.Grayscale(raw.getOutput())
     display = Display(src.getOutput(), "Testosterone-laden fish")
-    fish_presence = BackgroundSubtraction(src.getOutput(), avg_bg, 2.0)
+    fish_presence = LocateFish(src.getOutput(), avg_bg, 2.0)
 
     # Display video, gather data about fish's presence, abs mean value
     intensity_data = []
@@ -177,8 +206,8 @@ def fish_identification():
         fish_presence.update()
 
         # Get data about the fish's presence, append to list
-        fish_present = fish_presence.getOutput(0)
-        avg_val = fish_presence.getOutput(1)
+        fish_present = fish_presence.getOutput(1)
+        avg_val = fish_presence.getOutput(2)
         intensity_data.append( (avg_val, raw.getFrameName(), fish_present) )
 
         # Read the key, get ready for the next image
@@ -205,20 +234,26 @@ def particle_filter_test():
     frames = sorted(glob.glob("fish-83.2/*.tif"))
     raw = source.FileStackReader(frames)
     src = color.Grayscale(raw.getOutput())
-    fish_presence = BackgroundSubtraction(src.getOutput(), avg_bg, 2.0)
+    fish_presence = locateFish(src.getOutput(), avg_bg, 2.0)
     display = Display(src.getOutput(), "Testosterone Laden Goldfish")
     
+    '''
     blobs = particle_filter.DifferenceOfGaussian(src.getOutput())
     p_filter = particle_filter.Particle_Filter(blobs.getOutput(), 
-            fish_presence.getOutput(2), numpy.array([102,123]), patch_n, 100,True)
+            fish_presence.getOutput(0), numpy.array([102,123]), patch_n, 100,True)
     #p_filter3 = particle_filter.Particle_Filter(src.getOutput(),
     #       numpy.array([102,123]), patch_n, 100, True)
     features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)
     #features3 = ShowFeatures(src.getOutput(), p_filter3.getOutput(), patch_n)
     display2 = Display(features.getOutput(), "Eye_Tracking")
-    display3 = Display(blobs.getOutput(), "DoG")
+    #display3 = Display(blobs.getOutput(), "DoG")
+    '''
 
-    display4 = Display(fish_presence.getOutput(2), "Fish background subtraction")
+    display4 = Display(fish_presence.getOutput(0), "Fish background subtraction")
+
+    simple_fish_presence = locateFish(src.getOutput(), avg_bg, 2.0, False)
+    display5 = Display(simple_fish_presence.getOutput(0),
+            "Fish background subtraction (no morphological operations)")
     
     key = None
     frame = 0
@@ -226,15 +261,19 @@ def particle_filter_test():
         raw.update()
         src.update()
         display.update()
+
+        '''
         p_filter.update()
         #p_filter3.update()
         #features3.update()
         features.update()
         display2.update()
         #display3.update()
+        '''
 
         fish_presence.update()
         display4.update()
+        display5.update()
         
         frame += 1
         # TODO: frame numbers increment indefinitely

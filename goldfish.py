@@ -74,11 +74,12 @@ class LocateFish(pipeline.ProcessObject):
     def generateData(self):
         """
             Perform background subtraction on the image, segment the
-            bacteria colonies (foreground) from the background data.
+            fish from the rest of the objects in the tank as best as
+            possible. Manually exclude the left side of the frame too.
 
             Outputs:
                 [0] = Image object containing mask image of difference
-                [1] = <boolean> true if fish present in frame
+                [1] = <boolean> True if fish present in frame
                 [2] = <float> absolute mean value of pixel differences
                       of the frame and background image.
         """
@@ -239,10 +240,9 @@ def particle_filter_test():
     frames = sorted(glob.glob("fish-83.2/*.tif"))
     raw = source.FileStackReader(frames)
     src = color.Grayscale(raw.getOutput())
-    fish_presence = locateFish(src.getOutput(), avg_bg, 2.0)
+    fish_presence = LocateFish(src.getOutput(), avg_bg, 2.0)
     display = Display(src.getOutput(), "Testosterone Laden Goldfish")
     
-    '''
     blobs = particle_filter.DifferenceOfGaussian(src.getOutput())
     p_filter = particle_filter.Particle_Filter(blobs.getOutput(), 
             fish_presence.getOutput(0), numpy.array([102,123]), patch_n, 100,True)
@@ -252,11 +252,10 @@ def particle_filter_test():
     #features3 = ShowFeatures(src.getOutput(), p_filter3.getOutput(), patch_n)
     display2 = Display(features.getOutput(), "Eye_Tracking")
     #display3 = Display(blobs.getOutput(), "DoG")
-    '''
 
     display4 = Display(fish_presence.getOutput(0), "Fish background subtraction")
 
-    simple_fish_presence = locateFish(src.getOutput(), avg_bg, 2.0, False)
+    simple_fish_presence = LocateFish(src.getOutput(), avg_bg, 2.0, False)
     display5 = Display(simple_fish_presence.getOutput(0),
             "Fish background subtraction (no morphological operations)")
     
@@ -267,14 +266,12 @@ def particle_filter_test():
         src.update()
         display.update()
 
-        '''
         p_filter.update()
         #p_filter3.update()
         #features3.update()
         features.update()
         display2.update()
         #display3.update()
-        '''
 
         fish_presence.update()
         display4.update()

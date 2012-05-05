@@ -93,6 +93,7 @@ class BackgroundSubtraction(pipeline.ProcessObject):
         #tempBinary = ndimage.morphology.binary_opening(tempBinary, iterations = 5)
         #self.binary = numpy.logical_or(self.binary, tempBinary).astype(numpy.uint8)
 
+        assert tempBinary.ndim == 2 # Make sure we have just an intensity channel
         self.getOutput(2).setData(tempBinary*255)
 
 
@@ -161,26 +162,27 @@ def fish_identification():
     bg_frame_fns = sorted(glob.glob("fish-74.2/blanks/*.tif"))
     avg_bg = average_images(bg_frame_fns)
 
-    all_images = source.FileStackReader(all_frame_fns)
-    display = Display(all_images.getOutput(), "Testosterone-laden fish")
-    fish_presence = BackgroundSubtraction(all_images.getOutput(), avg_bg, 2.0)
+    raw = source.FileStackReader(all_frame_fns)
+    src = color.Grayscale(raw.getOutput())
+    display = Display(src.getOutput(), "Testosterone-laden fish")
+    fish_presence = BackgroundSubtraction(src.getOutput(), avg_bg, 2.0)
 
     # Display video, gather data about fish's presence, abs mean value
     intensity_data = []
     prev_frame = None
     key = None
-    while (key != 27) and (all_images.getFrameName() != prev_frame):
-        all_images.update()
+    while (key != 27) and (raw.getFrameName() != prev_frame):
+        raw.update()
         display.update()
         fish_presence.update()
 
         # Get data about the fish's presence, append to list
         fish_present = fish_presence.getOutput(0)
         avg_val = fish_presence.getOutput(1)
-        intensity_data.append( (avg_val, all_images.getFrameName(), fish_present) )
+        intensity_data.append( (avg_val, raw.getFrameName(), fish_present) )
 
         # Read the key, get ready for the next image
-        all_images.increment()
+        raw.increment()
         key = cv2.waitKey(20)
         key &= 255
 
@@ -242,45 +244,10 @@ def particle_filter_test():
         key &= 255
         raw.increment()
 
-def subtract_and_track():
-
-    patch_n = 20
-    
-    frames = sorted(glob.glob("fish-83.2/*.tif"))
-    raw = source.FileStackReader(frames)
-    src = color.Grayscale(raw.getOutput())
-    fish = BackgroundSubtraction(src.getOutput())
-    display = Display(fish.getOutput(1), "Testosterone-laden Goldfish")
-    blobs = particle_filter.DifferenceOfGaussian(src.getOutput(1))
-    p_filter = particle_filter.Particle_Filter(blobs.getOutput(),
-            numpy.array([102,123]), patch_n, 100)
-    features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)
-    display2 = Display(features.getOutput(), "Eye Tracking")
-    display3 = Display(blobs.getOutput(), "DoG")
-    
-    key = None
-    frame = 0
-    while key != 27:
-        raw.update()
-        raw.increment()
-        src.update()
-        display.update()
-        p_filter.update()
-        features.update()
-        display2.update()
-        display3.update()
-        
-        frame += 1
-        print "Frame: %d" % (frame)
-        
-
-        key = cv2.waitKey(10)
-        key &= 255
-
-
 if __name__ == "__main__":
     """
         Test the particle filter
     """
+    #fish_identification()
     particle_filter_test()
 

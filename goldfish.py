@@ -196,7 +196,7 @@ def particle_filter_test():
     """
         Test the particle filter, tracking the eyeball of the fish.
     """
-    patch_n = 20
+    patch_n = 8
     
      # A list of all frames where the goldfish and its shadow are absent
     bg_frame_fns = sorted(glob.glob("fish-83.2/blanks/*.tif"))
@@ -208,15 +208,15 @@ def particle_filter_test():
     fish_presence = BackgroundSubtraction(src.getOutput(), avg_bg, 2.0)
     display = Display(src.getOutput(), "Testosterone Laden Goldfish")
     
-    #blobs = particle_filter.DifferenceOfGaussian(src.getOutput())
-    p_filter = particle_filter.Particle_Filter(src.getOutput(), 
+    blobs = particle_filter.DifferenceOfGaussian(src.getOutput())
+    p_filter = particle_filter.Particle_Filter(blobs.getOutput(), 
             fish_presence.getOutput(2), numpy.array([102,123]), patch_n, 100)
     #p_filter3 = particle_filter.Particle_Filter(src.getOutput(),
     #       numpy.array([102,123]), patch_n, 100, True)
     features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)
     #features3 = ShowFeatures(src.getOutput(), p_filter3.getOutput(), patch_n)
     display2 = Display(features.getOutput(), "Eye_Tracking")
-    #display3 = Display(blobs.getOutput(), "DoG")
+    display3 = Display(blobs.getOutput(), "DoG")
 
     display4 = Display(fish_presence.getOutput(2), "Fish background subtraction")
     

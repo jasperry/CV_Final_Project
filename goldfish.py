@@ -210,7 +210,7 @@ def particle_filter_test():
     
     blobs = particle_filter.DifferenceOfGaussian(src.getOutput())
     p_filter = particle_filter.Particle_Filter(blobs.getOutput(), 
-            fish_presence.getOutput(2), numpy.array([102,123]), patch_n, 100)
+            fish_presence.getOutput(2), numpy.array([102,123]), patch_n, 100,True)
     #p_filter3 = particle_filter.Particle_Filter(src.getOutput(),
     #       numpy.array([102,123]), patch_n, 100, True)
     features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)

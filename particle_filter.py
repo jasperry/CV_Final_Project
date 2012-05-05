@@ -1,6 +1,7 @@
 #import cv
 #import cv2
 import numpy
+import random
 import pipeline
 from scipy import ndimage
 from scipy.ndimage import filters
@@ -36,7 +37,6 @@ class Particle_Filter(pipeline.ProcessObject):
 		
 		input = self.getInput(0).getData()
 		mask = self.getInput(1).getData()
-		print mask[mask>0].shape
 		
 		#if there is no histogram for the initial object to be tracked, grab one
 		if self.hist == None:
@@ -50,13 +50,13 @@ class Particle_Filter(pipeline.ProcessObject):
 			#clip to get that damn wall out of there
 			self.x = self.x.clip(numpy.array([0,103]), numpy.array(input.shape)-1).astype(int)
 			#clip values outside of the mask from background subtraction
+			nonzeros = numpy.argwhere(mask !=0)
 			for i in range(self.x.shape[0]):
 				y,x = self.x[i,:]
 				if mask[y,x] == 0.0:
 					#offset = numpy.random.randint(-self.stepsize, self.stepsize, (2))
-					y = self.pos[0]
-					x = self.pos[1]
-					print mask[self.pos[0],self.pos[1]]
+					y,x = random.choice(nonzeros)
+					print "Picked Random"
 					#clip out of range or on wall values
 					#temp = numpy.array([y,x]).clip(numpy.array([0,103]), numpy.array(input.shape)-1)
 					#y,x = temp

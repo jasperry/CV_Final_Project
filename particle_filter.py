@@ -19,8 +19,6 @@ Input(1) = Last Position of objects to be tracked
 '''
 class Particle_Filter(pipeline.ProcessObject):
 
-
-<<<<<<< HEAD
 	def __init__(self, input = None, pos = None, stepsize = None, n = None, best = False):
 		pipeline.ProcessObject.__init__(self, input, 2)
 		

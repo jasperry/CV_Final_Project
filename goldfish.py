@@ -199,8 +199,6 @@ def fish_identification():
     # A list of all frames where the goldfish and its shadow are absent
     bg_frame_fns = sorted(glob.glob("fish-83.2/blanks/*.tif"))
     avg_bg = average_images(bg_frame_fns)
-    print "Average bg ndim's:",
-    print avg_bg.shape
 
     # Read frames, convert to grayscale for segmenting
     raw = source.FileStackReader(all_frame_fns)

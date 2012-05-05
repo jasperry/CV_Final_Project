@@ -85,8 +85,8 @@ class BackgroundSubtraction(pipeline.ProcessObject):
         tempBinary = numpy.zeros(self.bgImg.shape)
 
         tempBinary[diff > 10] = 1
+        tempBinary[:,:103] = 0 # Manually exclude the wall
 
-        # 7-12 seems to be the ideal range
         #output = (inpt.astype(numpy.float) - self.bgImg.astype(numpy.float))
         #tempBinary[output < -5] = 1
         

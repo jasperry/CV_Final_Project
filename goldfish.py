@@ -94,8 +94,8 @@ class BackgroundSubtraction(pipeline.ProcessObject):
         #tempBinary = ndimage.morphology.binary_opening(tempBinary, iterations = 5)
         #self.binary = numpy.logical_or(self.binary, tempBinary).astype(numpy.uint8)
 
-        #self.getOutput(2).setData(tempBinary*255)
-        self.getOutput(2).setData(self.binary*255)
+        self.getOutput(2).setData(tempBinary*255)
+        #self.getOutput(2).setData(self.binary*255)
 
 
 class ShowFeatures(pipeline.ProcessObject):

@@ -47,6 +47,7 @@ class Display(pipeline.ProcessObject):
         cv2.imshow(self.name, inpt.astype(numpy.uint8))        
 
 
+#NOTE: settings currently tweaked to best suit 83.2 dataset
 class LocateFish(pipeline.ProcessObject):
     """
         Segment the goldfish from the rest of the tank and other objects.
@@ -65,7 +66,7 @@ class LocateFish(pipeline.ProcessObject):
     """
     def __init__(self, inpt, bgImg, threshold=2.0, isolate_fish=True):
         pipeline.ProcessObject.__init__(self, inpt, outputCount=3)
-        assert bgImg.shape == 2 # make sure image is grayscale
+        assert bgImg.ndim == 2 # make sure image is grayscale
         self.bgImg = bgImg
         self.threshold = threshold
         self.binary = numpy.zeros(bgImg.shape)
@@ -183,24 +184,35 @@ def average_images(filenames):
 def fish_identification():
     """
         Identify whether or not the fish is in the image by using background
-        subtraction
-        
-        If the mean absolute intensity exceeds a given threshold, we conclude
-        that the fish is present (and if does not exceed the threshould,
-        absent).
+        subtraction and some morphological operations. Demonstrates the
+        improvements over pure background subtraction and thresholding
+        done by the LocateFish class.
+
+        Saves the indicator variable, and floating point metric used to
+        estimate whether or not the fish is in the screen to a sorted
+        .csv file.
     """
 
     # All frames in the data set
-    all_frame_fns = sorted(glob.glob("fish-74.2/*.tif"))
+    all_frame_fns = sorted(glob.glob("fish-83.2/*.tif"))
 
     # A list of all frames where the goldfish and its shadow are absent
-    bg_frame_fns = sorted(glob.glob("fish-74.2/blanks/*.tif"))
+    bg_frame_fns = sorted(glob.glob("fish-83.2/blanks/*.tif"))
     avg_bg = average_images(bg_frame_fns)
+    print "Average bg ndim's:",
+    print avg_bg.shape
 
+    # Read frames, convert to grayscale for segmenting
     raw = source.FileStackReader(all_frame_fns)
     src = color.Grayscale(raw.getOutput())
     display = Display(src.getOutput(), "Testosterone-laden fish")
+
+    # Create two windows - one with fish isolation on, one without
     fish_presence = LocateFish(src.getOutput(), avg_bg, 2.0)
+    fish_isolated = Display(fish_presence.getOutput(0), "Fish isolation")
+    simple_fish_presence = LocateFish(src.getOutput(), avg_bg, 2.0, False)
+    fish_unisolated = Display(simple_fish_presence.getOutput(0),
+            "Fish isolation (no morphological operations)")
 
     # Display video, gather data about fish's presence, abs mean value
     intensity_data = []
@@ -210,6 +222,10 @@ def fish_identification():
         raw.update()
         display.update()
         fish_presence.update()
+
+        # Update the comparison windows side-by-side
+        fish_isolated.update()
+        fish_unisolated.update()
 
         # Get data about the fish's presence, append to list
         fish_present = fish_presence.getOutput(1)
@@ -289,6 +305,6 @@ if __name__ == "__main__":
     """
         Test the particle filter
     """
-    #fish_identification()
-    particle_filter_test()
+    fish_identification()
+    #particle_filter_test()
 

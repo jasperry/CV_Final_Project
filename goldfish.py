@@ -49,7 +49,7 @@ class Display(pipeline.ProcessObject):
 
 class LocateFish(pipeline.ProcessObject):
     """
-        Segment the goldfish from the rest of the tank.
+        Segment the goldfish from the rest of the tank and other objects.
 
         This class does a good job of separating the fish from its shadow and
         other particles floating through the tank, except when the fish is
@@ -65,7 +65,7 @@ class LocateFish(pipeline.ProcessObject):
     """
     def __init__(self, inpt, bgImg, threshold=2.0, isolate_fish=True):
         pipeline.ProcessObject.__init__(self, inpt, outputCount=3)
-        assert bgImg.shape == 2 # make sure it's an x,y grid of booleans
+        assert bgImg.shape == 2 # make sure image is grayscale
         self.bgImg = bgImg
         self.threshold = threshold
         self.binary = numpy.zeros(bgImg.shape)
@@ -96,6 +96,11 @@ class LocateFish(pipeline.ProcessObject):
         # Initialize arrays that tell us where the fish is (1 == foreground)
         binary_img = numpy.zeros(self.bgImg.shape)
         fishmask = binary_img
+
+        # If the fish is not present, we don't want to identify anything
+        if not fish_present:
+            self.getOutput(0).setData(binary_img)
+            return
 
         # Create a binary image where 1's indicate a significant
         # difference from the background image

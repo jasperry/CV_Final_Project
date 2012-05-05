@@ -177,27 +177,25 @@ def particle_filter_test():
     """
     patch_n = 20
     
+     # A list of all frames where the goldfish and its shadow are absent
+    bg_frame_fns = sorted(glob.glob("fish-83.2/blanks/*.tif"))
+    avg_bg = average_images(bg_frame_fns)
+    
     frames = sorted(glob.glob("fish-83.2/*.tif"))
     raw = source.FileStackReader(frames)
     src = color.Grayscale(raw.getOutput())
+    fish_presence = BackgroundSubtraction(raw.getOutput(), avg_bg, 2.0)
     display = Display(src.getOutput(), "Testosterone Laden Goldfish")
-    blobs = particle_filter.DifferenceOfGaussian(src.getOutput())
-    p_filter = particle_filter.Particle_Filter(blobs.getOutput(),
-            numpy.array([102,123]), patch_n, 100)
+    
+    blobs = particle_filter.DifferenceOfGaussian(fish_presence.getOutput())
+    p_filter = particle_filter.Particle_Filter(blobs.getOutput(), 
+            fish_presence.getOutput(1), numpy.array([102,123]), patch_n, 100)
     #p_filter3 = particle_filter.Particle_Filter(src.getOutput(),
     #       numpy.array([102,123]), patch_n, 100, True)
     features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)
     #features3 = ShowFeatures(src.getOutput(), p_filter3.getOutput(), patch_n)
     display2 = Display(features.getOutput(), "Eye_Tracking")
     display3 = Display(blobs.getOutput(), "DoG")
-
-
-    # Get averaged background image
-    bg_frame_fns = sorted(glob.glob("fish-83.2/blanks/*.tif"))
-    avg_bg = average_images(bg_frame_fns)
-
-    print raw.getOutput()
-    fish_presence = BackgroundSubtraction(raw.getOutput(), avg_bg, 2.0)
 
     display4 = Display(fish_presence.getOutput(2), "Fish background subtraction")
     

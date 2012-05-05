@@ -19,7 +19,7 @@ Input(1) = Last Position of objects to be tracked
 '''
 class Particle_Filter(pipeline.ProcessObject):
 
-	def __init__(self, input = None, pos = None, stepsize = None, n = None, best = False):
+	def __init__(self, input = None, mask = None, pos = None, stepsize = None, n = None, best = False):
 		pipeline.ProcessObject.__init__(self, input, 2)
 		
 		self.start_position = pos
@@ -28,6 +28,8 @@ class Particle_Filter(pipeline.ProcessObject):
 		self.x = numpy.ones((n,2), int) * pos
 		self.hist = None
 		self.best = best
+		
+		self.setInput(1, mask)
 		
 		
 		

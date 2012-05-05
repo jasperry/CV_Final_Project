@@ -83,7 +83,7 @@ class BackgroundSubtraction(pipeline.ProcessObject):
         self.setOutput(diff.mean(), 1)
         #self.getOutput(2).setData(mask)
 
-        tempBinary = numpy.zeros(output.shape)
+        tempBinary = numpy.zeros(self.bgImg.shape)
 
         tempBinary[diff > 10] = 1
 

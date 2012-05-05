@@ -47,18 +47,21 @@ class Particle_Filter(pipeline.ProcessObject):
         
             #perturb particles, clip for size, make histograms for each particle
             self.x += numpy.random.uniform(-self.stepsize, self.stepsize, self.x.shape)
-            #clip to get that damn wall out of there
+
+            #clip to exclude the wall
             self.x = self.x.clip(numpy.array([0,103]), numpy.array(input.shape)-1).astype(int)
-            #clip values outside of the mask from background subtraction
-            nonzero_positions = numpy.argwhere(mask !=0)
+
+            # List of (x,y) positions fish is present (already excludes wall)
+            nonzero_positions = numpy.argwhere(mask != 0)
+
+            # Ensure that all particles are on the fish
+            # If a particle is off the fish, randomly choose one on its body
             for i in range(self.x.shape[0]):
                 y,x = self.x[i,:]
                 if mask[y,x] == 0.0:
+                    self.x[i,:] = random.choice(nonzero_positions)
+
                     #offset = numpy.random.randint(-self.stepsize, self.stepsize, (2))
-                    y,x = random.choice(nonzero_positions)
-                    print "Picked Random"
-                    print mask[y][x]
-                    #clip out of range or on wall values
                     #temp = numpy.array([y,x]).clip(numpy.array([0,103]), numpy.array(input.shape)-1)
                     #y,x = temp
             

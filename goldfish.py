@@ -8,7 +8,7 @@
 import csv
  
 import glob
-#from scipy import ndimage
+from scipy import ndimage
 import cv
 import cv2
 import numpy
@@ -60,6 +60,7 @@ class BackgroundSubtraction(pipeline.ProcessObject):
         pipeline.ProcessObject.__init__(self, inpt, outputCount=3)
         self.bgImg = bgImg
         self.threshold = threshold
+        self.binary = numpy.zeros(bgImg.shape)
     
     def generateData(self):
         """
@@ -80,7 +81,22 @@ class BackgroundSubtraction(pipeline.ProcessObject):
 
         self.setOutput(fish_present, 0)
         self.setOutput(diff.mean(), 1)
-        self.getOutput(2).setData(diff)
+        #self.getOutput(2).setData(mask)
+
+        tempBinary = numpy.zeros(output.shape)
+
+        tempBinary[diff > 10] = 1
+
+        # 7-12 seems to be the ideal range
+        #output = (inpt.astype(numpy.float) - self.bgImg.astype(numpy.float))
+        #tempBinary[output < -5] = 1
+        
+        #tempBinary = ndimage.morphology.binary_opening(tempBinary, iterations = 5)
+        #self.binary = numpy.logical_or(self.binary, tempBinary).astype(numpy.uint8)
+
+        #self.getOutput(2).setData(tempBinary*255)
+        self.getOutput(2).setData(self.binary*255)
+
 
 class ShowFeatures(pipeline.ProcessObject):
     """
@@ -216,6 +232,7 @@ def particle_filter_test():
         display4.update()
         
         frame += 1
+        # TODO: frame numbers increment indefinitely
         print "Frame: %d" % (frame)
 
         key = cv2.waitKey(10)

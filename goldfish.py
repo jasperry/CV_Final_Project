@@ -81,7 +81,6 @@ class BackgroundSubtraction(pipeline.ProcessObject):
 
         self.setOutput(fish_present, 0)
         self.setOutput(diff.mean(), 1)
-        #self.getOutput(2).setData(mask)
 
         tempBinary = numpy.zeros(self.bgImg.shape)
 
@@ -94,8 +93,7 @@ class BackgroundSubtraction(pipeline.ProcessObject):
         #tempBinary = ndimage.morphology.binary_opening(tempBinary, iterations = 5)
         #self.binary = numpy.logical_or(self.binary, tempBinary).astype(numpy.uint8)
 
-        self.getOutput(2).setData(tempBinary[...,0]*255)
-        #self.getOutput(2).setData(self.binary*255)
+        self.getOutput(2).setData(tempBinary*255)
 
 
 class ShowFeatures(pipeline.ProcessObject):
@@ -126,16 +124,21 @@ class ShowFeatures(pipeline.ProcessObject):
 
 def average_images(filenames):
     """
-        Return a numpy image of the averaged images from the filenames.
+        Return a numpy image of the averaged grayscale images from the filenames.
     """
     # Use a pipeline object to read all the images into a buffer
-    image_reader = source.FileStackReader(filenames)
-    avg_buffer = avgimage.AvgImage(buffer_size = image_reader.getLength())
+    image_stack = source.FileStackReader(filenames)
+    image_reader = color.Grayscale(image_stack.getOutput())
+
+    avg_buffer = avgimage.AvgImage(buffer_size = image_stack.getLength())
     for i in range(avg_buffer.get_buffer_size()):
+        image_stack.update()
         image_reader.update()
+
         image = (image_reader.getOutput()).getData()
         avg_buffer.add_image( image )
-        image_reader.increment()
+
+        image_stack.increment()
 
     # Return the average of all frames in the buffer (a numpy image)
     return avg_buffer.get_avg_image()
@@ -200,7 +203,7 @@ def particle_filter_test():
     frames = sorted(glob.glob("fish-83.2/*.tif"))
     raw = source.FileStackReader(frames)
     src = color.Grayscale(raw.getOutput())
-    fish_presence = BackgroundSubtraction(raw.getOutput(), avg_bg, 2.0)
+    fish_presence = BackgroundSubtraction(src.getOutput(), avg_bg, 2.0)
     display = Display(src.getOutput(), "Testosterone Laden Goldfish")
     
     #blobs = particle_filter.DifferenceOfGaussian(src.getOutput())

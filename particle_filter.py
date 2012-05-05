@@ -22,14 +22,14 @@ class Particle_Filter(pipeline.ProcessObject):
 	def __init__(self, input = None, mask = None, pos = None, stepsize = None, n = None, best = False):
 		pipeline.ProcessObject.__init__(self, input, 2)
 		
-		self.start_position = pos
+		self.pos = pos
 		self.stepsize = stepsize
 		self.n = n
 		self.x = numpy.ones((n,2), int) * pos
 		self.hist = None
 		self.best = best
 		
-		self.setInput(1, mask)
+		self.setInput(mask, 1)
 		
 		
 		
@@ -41,7 +41,7 @@ class Particle_Filter(pipeline.ProcessObject):
 		#if there is no histogram for the initial object to be tracked, grab one
 		if self.hist == None:
 			self.hist = self.make_histogram(input, self.x, self.stepsize)
-			self.getOutput().setData(self.start_position)
+			self.getOutput().setData(self.pos)
 			
 		else:
 		
@@ -51,10 +51,14 @@ class Particle_Filter(pipeline.ProcessObject):
 			self.x = self.x.clip(numpy.array([0,103]), numpy.array(input.shape)-1).astype(int)
 			#clip values outside of the mask from background subtraction
 			for y,x in self.x:
-				while mask[y,x] == 0:
-					offset = numpy.random.randint(-self.stepsize, self.stepsize, (1,2))
-					y = self.pos[0] + offset[0]
-					x = self.pos[1] + offset[1]
+				if mask[y,x] == 0:
+					offset = numpy.random.randint(-self.stepsize, self.stepsize, (2))
+					y = self.pos[0]
+					x = self.pos[1]
+					
+					#clip out of range or on wall values
+					#temp = numpy.array([y,x]).clip(numpy.array([0,103]), numpy.array(input.shape)-1)
+					#y,x = temp
 			
 			new_hist = self.make_histogram(input, self.x, self.stepsize)
 			

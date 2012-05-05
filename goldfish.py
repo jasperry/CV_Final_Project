@@ -203,15 +203,15 @@ def particle_filter_test():
     fish_presence = BackgroundSubtraction(raw.getOutput(), avg_bg, 2.0)
     display = Display(src.getOutput(), "Testosterone Laden Goldfish")
     
-    blobs = particle_filter.DifferenceOfGaussian(fish_presence.getOutput())
-    p_filter = particle_filter.Particle_Filter(blobs.getOutput(), 
-            fish_presence.getOutput(1), numpy.array([102,123]), patch_n, 100)
+    #blobs = particle_filter.DifferenceOfGaussian(src.getOutput())
+    p_filter = particle_filter.Particle_Filter(src.getOutput(), 
+            fish_presence.getOutput(2), numpy.array([102,123]), patch_n, 100)
     #p_filter3 = particle_filter.Particle_Filter(src.getOutput(),
     #       numpy.array([102,123]), patch_n, 100, True)
     features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)
     #features3 = ShowFeatures(src.getOutput(), p_filter3.getOutput(), patch_n)
     display2 = Display(features.getOutput(), "Eye_Tracking")
-    display3 = Display(blobs.getOutput(), "DoG")
+    #display3 = Display(blobs.getOutput(), "DoG")
 
     display4 = Display(fish_presence.getOutput(2), "Fish background subtraction")
     
@@ -226,7 +226,7 @@ def particle_filter_test():
         #features3.update()
         features.update()
         display2.update()
-        display3.update()
+        #display3.update()
 
         fish_presence.update()
         display4.update()

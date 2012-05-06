@@ -135,33 +135,6 @@ class LocateFish(pipeline.ProcessObject):
         assert fishmask.ndim == 2 # make sure it's an x,y grid of booleans
         self.getOutput(0).setData(fishmask*255)
 
-
-class ShowFeatures(pipeline.ProcessObject):
-    """
-        Draws boxes around the features in an image
-
-        inpt: The input image to draw on
-        features: an (x,y) tuple of the feature center
-            TODO: list of features?
-    """
-    def __init__(self, inpt=None, features=None, n=None):
-        pipeline.ProcessObject.__init__(self, inpt, 2)
-        self.setInput(features, 1)
-        self.r = n/2.
-        
-    def generateData(self):
-        """
-            Draw a rectangle at the feature location
-        """
-        inpt = self.getInput(0).getData()
-        feature = self.getInput(1).getData()
-        x = feature[1]
-        y = feature[0]
-        r = self.r
-        cv2.rectangle(inpt, (int(x-r), int(y-r)), (int(x+r), int(y+r)),
-                (255,0,0), thickness=2)
-        self.getOutput(0).setData(inpt)
-
 class FishOrientation(pipeline.ProcessObject):
     """
         Determines the fish's left/right orientation, and its horizontality.
@@ -177,25 +150,28 @@ class FishOrientation(pipeline.ProcessObject):
             [0] = Input 0 with features drawn over it
             [1] = Tuple of distance data (TODO)
     """
-    def __init__(self, inpt, eye_feature, fin_feature, min_dist=90,
-            rect_width=10, debug=False):
+    # TODO: fin_feature is currently allowed to be None, so this works
+    #       for just one feature. we should eventually disable this, though
+    def __init__(self, inpt, eye_feature, fin_feature=None, min_dist=90,
+            shape_size=10, debug=False):
         """
-            Initialize with proper count of inputs and outputs, as well
-            as values to determine feature drawing and orientation.
+            Initialize a pipeline object with the appropriate count of
+            inputs and outputs, adding values to specifying feature
+            shape sizes.
         """
         pipeline.ProcessObject.__init__(self, inpt, inputCount=3,
                 outputCount=2)
         self.setInput(eye_feature, 1)
         self.setInput(fin_feature, 2)
         self.min_dist = min_dist
-        self.r = rect_width /2
+        self.r = shape_size /2
         self.debug = debug
 
     def draw_features(self, coords):
         """
             Draw shapes around each (y,x) coordinate in coords.
 
-            The first coordinate will be drawn as a circle, and the
+            The first coordinate will be drawn as a circle, and any
             remaining coordinates as rectangles. self.r gives shape size.
         """
         inpt = numpy.copy(self.getInput(0).getData())
@@ -216,9 +192,21 @@ class FishOrientation(pipeline.ProcessObject):
 
     def generateData(self):
         """
-            Draw features on the image, calculate orientation, horizontality
+            Draw features on the image, calculate orientation, horizontality.
+
+            If no fin feature has been supplied, it will simply draw the eye
+            feature, and skip all calculations
+
         """
         eye_coords = (y1,x1) = self.getInput(1).getData()
+
+        # TODO: this block addresses when only one feature is supplied
+        #       it should ultimately be deleted
+        fin_object = self.getInput(2)
+        if fin_object == None:
+            self.draw_features( [eye_coords] )
+            return
+
         fin_coords = (y2,x2) = self.getInput(2).getData()
         self.draw_features( [eye_coords, fin_coords] )
 
@@ -385,8 +373,10 @@ def particle_filter_test():
             fish_presence.getOutput(0), numpy.array([102,123]), patch_n, 100,True)
     #p_filter3 = particle_filter.Particle_Filter(src.getOutput(),
     #       numpy.array([102,123]), patch_n, 100, True)
-    features = ShowFeatures(src.getOutput(), p_filter.getOutput(), patch_n)
-    #features3 = ShowFeatures(src.getOutput(), p_filter3.getOutput(), patch_n)
+    features = FishOrientation(src.getOutput(), p_filter.getOutput(),
+            shape_size=patch_n)
+    #features3 = FishOrientation(src.getOutput(), p_filter3.getOutput(),
+    #       shape_size=patch_n)
     display2 = Display(features.getOutput(), "Eye_Tracking")
     #display3 = Display(blobs.getOutput(), "DoG")
 
@@ -421,7 +411,7 @@ if __name__ == "__main__":
     """
         Test the particle filter
     """
-    fish_orientation()
+    #fish_orientation()
     #fish_identification()
-    #particle_filter_test()
+    particle_filter_test()
 

@@ -250,9 +250,14 @@ def average_images(filenames):
     return avg_buffer.get_avg_image()
     
 
-def fish_orientation():
+def test_orientation():
     """
-        Test the ability of determining fish orientation
+        Test the ability of determining fish orientation.
+
+        Generates fake coordinates, and activates debug mode so that we
+        can see how the FishOrientation class handles these datapoints.
+        Includes a time delay and visual output so we can confirm its
+        accuracy with visual data.
     """
 
     # All frames in the data set
@@ -262,37 +267,41 @@ def fish_orientation():
     raw = source.FileStackReader(all_frame_fns)
     src = color.Grayscale(raw.getOutput())
 
-    # Create eye and fin coordinates to test the class
     def get_random_coord():
+        """
+            Generate a random coordinate within the tank space
+        """
         x = random.randint(110,240)
         y = random.randint(0,240)
         return (y,x)
+
     eye_coord = pipeline.Image(data = get_random_coord())
     fin_coord = pipeline.Image(data = get_random_coord())
 
     orientation = FishOrientation(src.getOutput(), eye_coord, fin_coord,
-            debug = True)
+            debug=True)
     feature_display = Display(orientation.getOutput(0),
             "Dummy features")
 
-    # Display video, gather data about fish's presence, abs mean value
+    # Display video with random features, print results of calculations
     prev_frame = None
     key = None
     while (key != 27) and (raw.getFrameName() != prev_frame):
-
-        eye_coord.setData(get_random_coord())
-        fin_coord.setData(get_random_coord())
         raw.update()
         orientation.update()
         feature_display.update()
 
-        # Read the key, get ready for the next image
+        # Assign random coordinates for the next iteration
+        eye_coord.setData(get_random_coord())
+        fin_coord.setData(get_random_coord())
+
+        # Read the key, increment the reader to the next image
         raw.increment()
         key = cv2.waitKey(20)
         key &= 255
         time.sleep(1)
 
-def fish_identification():
+def test_identification():
     """
         Identify whether or not the fish is in the image by using background
         subtraction and some morphological operations. Demonstrates the
@@ -411,7 +420,7 @@ if __name__ == "__main__":
     """
         Test the particle filter
     """
-    #fish_orientation()
-    #fish_identification()
+    #test_orientation()
+    #test_identification()
     particle_filter_test()
 

@@ -116,10 +116,10 @@ class LocateFish(pipeline.ProcessObject):
 
             # Open the image to fill the fish's body, eliminate small noise
             binary_img = ndimage.morphology.binary_opening(binary_img,
-                    numpy.ones( (2,2) ), iterations=2)
+                    numpy.ones( (3,3) ), iterations=1)
             # Extra dilation to ensure we extend a bit past fish's body
             binary_img = ndimage.morphology.binary_dilation(binary_img,
-                    iterations=3)
+                    numpy.ones( (3,3) ), iterations=2)
             
             # Divide the image into connected components (e.g. the fish and two
             # shadows below it)

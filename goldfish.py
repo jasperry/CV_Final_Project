@@ -10,17 +10,17 @@ import math
 import random
 import time
  
-import glob
-from scipy import ndimage
 import cv
 import cv2
+import glob
 import numpy
+from scipy import ndimage
 
 import avgimage
-import pipeline
-import source
 import color
 import particle_filter
+import pipeline
+import source
 
 class Display(pipeline.ProcessObject):
     """
@@ -55,9 +55,9 @@ class LocateFish(pipeline.ProcessObject):
     """
         Segment the goldfish from the rest of the tank and other objects.
 
-        This class does a good job of separating the fish from its shadow and
-        other particles floating through the tank, except when the fish is
-        towards the bottom of the tank. 
+        This class does a good job of separating the fish from its
+        shadow and other particles floating through the tank, except
+        when the fish is towards the bottom of the tank. 
 
         inpt: a grayscale pipeline.Image object
         threshold: the minimum absolute mean difference to consider the
@@ -68,8 +68,11 @@ class LocateFish(pipeline.ProcessObject):
             cover its entire body, and dilate slightly past its edges.
     """
     def __init__(self, inpt, bgImg, threshold=2.0, isolate_fish=True):
+        """
+            Make sure image is grayscale, set up fields.
+        """
         pipeline.ProcessObject.__init__(self, inpt, outputCount=3)
-        assert bgImg.ndim == 2 # make sure image is grayscale
+        assert bgImg.ndim == 2, "Image is not grayscale! (channels >2)"
         self.bgImg = bgImg
         self.threshold = threshold
         self.binary = numpy.zeros(bgImg.shape)
@@ -140,7 +143,7 @@ class FishOrientation(pipeline.ProcessObject):
         Determines the fish's left/right orientation, and its horizontality.
 
         A fish is deemed to be horizontal if its x-axis distance exceeds
-        the threshold supplied in min_dist
+        the threshold supplied in min_dist.
 
         Inputs:
             [0] = Image object to draw over
@@ -156,13 +159,13 @@ class FishOrientation(pipeline.ProcessObject):
             shape_size=10, debug=False):
         """
             Initialize a pipeline object with the appropriate count of
-            inputs and outputs, adding values to specifying feature
-            shape sizes.
+            inputs and outputs, creating fields to specify shape sizes.
         """
         pipeline.ProcessObject.__init__(self, inpt, inputCount=3,
                 outputCount=2)
         self.setInput(eye_feature, 1)
         self.setInput(fin_feature, 2)
+
         self.min_dist = min_dist
         self.r = shape_size /2
         self.debug = debug
@@ -300,6 +303,7 @@ def test_orientation():
         key = cv2.waitKey(20)
         key &= 255
         time.sleep(1)
+
 
 def test_identification():
     """

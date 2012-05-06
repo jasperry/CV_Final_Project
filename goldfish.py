@@ -218,11 +218,11 @@ class FishOrientation(pipeline.ProcessObject):
         self.setOutput((fish_horizontal, facing_left), 1)
 
         if self.debug:
-            output = [ ("Euclidean distance", euclidean_dist),
-                       ("X distance", x_dist),
+            output = [ ("Fish's x distance", x_dist),
+                       ("Euclidean distance", euclidean_dist),
                        ("Min. horizontal dist", self.min_dist),
-                       ("Is horizontal", fish_horizontal),
-                       ("Facing left", facing_left) ]
+                       ("Fish is horizontal", fish_horizontal),
+                       ("Fish is facing left", facing_left) ]
             print 10 * "-"
             for (msg, value) in output:
                 print ("{0:20} : {1}".format(msg, value))
@@ -418,9 +418,10 @@ def particle_filter_test():
 
 if __name__ == "__main__":
     """
-        Test the particle filter
+        Test some aspect of the program in a specialized environment,
+        unique of other program components (i.e. unit testing)
     """
-    #test_orientation()
+    test_orientation()
     #test_identification()
-    particle_filter_test()
+    #particle_filter_test()
 

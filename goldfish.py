@@ -7,6 +7,7 @@
 
 import csv
 import math
+import random
 import time
  
 import glob
@@ -177,7 +178,7 @@ class FishOrientation(pipeline.ProcessObject):
             [1] = Tuple of distance data (TODO)
     """
     def __init__(self, inpt, eye_feature, fin_feature, min_dist=90,
-            rect_width=10):
+            rect_width=10, debug=False):
         """
             Initialize with proper count of inputs and outputs, as well
             as values to determine feature drawing and orientation.
@@ -188,6 +189,7 @@ class FishOrientation(pipeline.ProcessObject):
         self.setInput(fin_feature, 2)
         self.min_dist = min_dist
         self.r = rect_width /2
+        self.debug = debug
 
     def draw_features(self, coords):
         """
@@ -220,12 +222,16 @@ class FishOrientation(pipeline.ProcessObject):
         facing_left = (x_dist > 0)
         self.setOutput((fish_horizontal, facing_left), 1)
 
-        '''
-        print "Fish distance: %s" % x_dist
-        print "Minimum distance to be horizontal: %s" % self.min_dist
-        print "Fish is horizontal: %s" % fish_horizontal
-        print "Fish is facing left: %s" % facing_left
-        '''
+        if self.debug:
+            output = [ ("Euclidean distance", euclidean_dist),
+                       ("X distance", x_dist),
+                       ("Min. horizontal dist", self.min_dist),
+                       ("Is horizontal", fish_horizontal),
+                       ("Facing left", facing_left) ]
+            print 10 * "-"
+            for (msg, value) in output:
+                print ("{0:20} : {1}".format(msg, value))
+
 
 def average_images(filenames):
     """
@@ -262,17 +268,25 @@ def fish_orientation():
     src = color.Grayscale(raw.getOutput())
 
     # Create eye and fin coordinates to test the class
-    eye_coord = pipeline.Image(data = (180, 120))
-    fin_coord = pipeline.Image(data = (160, 220))
+    def get_random_coord():
+        x = random.randint(110,240)
+        y = random.randint(0,240)
+        return (y,x)
+    eye_coord = pipeline.Image(data = get_random_coord())
+    fin_coord = pipeline.Image(data = get_random_coord())
 
-    orientation = FishOrientation(src.getOutput(), eye_coord, fin_coord)
+    orientation = FishOrientation(src.getOutput(), eye_coord, fin_coord,
+            debug = True)
     feature_display = Display(orientation.getOutput(0),
-            "Features marked on the fish!")
+            "Dummy features")
 
     # Display video, gather data about fish's presence, abs mean value
     prev_frame = None
     key = None
     while (key != 27) and (raw.getFrameName() != prev_frame):
+
+        eye_coord.setData(get_random_coord())
+        fin_coord.setData(get_random_coord())
         raw.update()
         orientation.update()
         feature_display.update()
@@ -281,7 +295,7 @@ def fish_orientation():
         raw.increment()
         key = cv2.waitKey(20)
         key &= 255
-        time.sleep(.5)
+        time.sleep(1)
 
 def fish_identification():
     """

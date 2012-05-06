@@ -2,10 +2,12 @@
 
 # David Cain
 # Justin Sperry
-# 2012-05-04
+# 2012-05-06
 # CS365, Brian Eastwood
 
 import csv
+import math
+import time
  
 import glob
 from scipy import ndimage
@@ -159,6 +161,72 @@ class ShowFeatures(pipeline.ProcessObject):
                 (255,0,0), thickness=2)
         self.getOutput(0).setData(inpt)
 
+class FishOrientation(pipeline.ProcessObject):
+    """
+        Determines the fish's left/right orientation, and its horizontality.
+
+        A fish is deemed to be horizontal if its x-axis distance exceeds
+        the threshold supplied in min_dist
+
+        Inputs:
+            [0] = Image object to draw over
+            [1] = Image object containing coordinates to eye feature
+            [2] = Image object containing coordinates to fin feature
+        Outputs:
+            [0] = Input 0 with features drawn over it
+            [1] = Tuple of distance data (TODO)
+    """
+    def __init__(self, inpt, eye_feature, fin_feature, min_dist=90,
+            rect_width=10):
+        """
+            Initialize with proper count of inputs and outputs, as well
+            as values to determine feature drawing and orientation.
+        """
+        pipeline.ProcessObject.__init__(self, inpt, inputCount=3,
+                outputCount=2)
+        self.setInput(eye_feature, 1)
+        self.setInput(fin_feature, 2)
+        self.min_dist = min_dist
+        self.r = rect_width /2
+
+    def draw_features(self, coords):
+        """
+            Draw rectangles around each (y,x) coordinate in coords
+
+            Rectangle size is given by self.r
+        """
+        inpt = numpy.copy(self.getInput(0).getData()) # do we need to copy?
+
+        box_color = (255, 0, 0) # red
+        r = self.r
+        for (y, x) in coords:
+            top_left = ( int(x-r), int(y-r) )
+            bottom_right = ( int(x+r), int(y+r) )
+            cv2.rectangle(inpt, top_left, bottom_right, box_color, thickness=2)
+        self.getOutput(0).setData(inpt)
+
+    def generateData(self):
+        """
+            Draw features on the image, calculate orientation, horizontality
+        """
+        eye_coords = (y1,x1) = self.getInput(1).getData()
+        fin_coords = (y2,x2) = self.getInput(2).getData()
+        self.draw_features( [eye_coords, fin_coords] )
+
+        euclidean_dist = math.hypot( x2-x1, y2-y1 )
+        x_dist = (x2-x1) # fin - eye (positive is fish facing left
+
+        fish_horizontal = abs(x_dist) > self.min_dist
+        facing_left = (x_dist > 0)
+        self.setOutput((fish_horizontal, facing_left), 1)
+
+        '''
+        print "Fish distance: %s" % x_dist
+        print "Minimum distance to be horizontal: %s" % self.min_dist
+        print "Fish is horizontal: %s" % fish_horizontal
+        print "Fish is facing left: %s" % facing_left
+        '''
+
 def average_images(filenames):
     """
         Return a numpy image of the averaged grayscale images from the filenames.
@@ -180,6 +248,40 @@ def average_images(filenames):
     # Return the average of all frames in the buffer (a numpy image)
     return avg_buffer.get_avg_image()
     
+
+def fish_orientation():
+    """
+        Test the ability of determining fish orientation
+    """
+
+    # All frames in the data set
+    all_frame_fns = sorted(glob.glob("fish-83.2/*.tif"))
+
+    # Read frames, convert to grayscale for segmenting
+    raw = source.FileStackReader(all_frame_fns)
+    src = color.Grayscale(raw.getOutput())
+
+    # Create eye and fin coordinates to test the class
+    eye_coord = pipeline.Image(data = (180, 120))
+    fin_coord = pipeline.Image(data = (160, 220))
+
+    orientation = FishOrientation(src.getOutput(), eye_coord, fin_coord)
+    feature_display = Display(orientation.getOutput(0),
+            "Features marked on the fish!")
+
+    # Display video, gather data about fish's presence, abs mean value
+    prev_frame = None
+    key = None
+    while (key != 27) and (raw.getFrameName() != prev_frame):
+        raw.update()
+        orientation.update()
+        feature_display.update()
+
+        # Read the key, get ready for the next image
+        raw.increment()
+        key = cv2.waitKey(20)
+        key &= 255
+        time.sleep(.5)
 
 def fish_identification():
     """
@@ -268,10 +370,6 @@ def particle_filter_test():
     #display3 = Display(blobs.getOutput(), "DoG")
 
     display4 = Display(fish_presence.getOutput(0), "Fish background subtraction")
-
-    simple_fish_presence = LocateFish(src.getOutput(), avg_bg, 2.0, False)
-    display5 = Display(simple_fish_presence.getOutput(0),
-            "Fish background subtraction (no morphological operations)")
     
     key = None
     frame = 0
@@ -289,7 +387,6 @@ def particle_filter_test():
 
         fish_presence.update()
         display4.update()
-        display5.update()
         
         frame += 1
         # TODO: frame numbers increment indefinitely
@@ -303,6 +400,7 @@ if __name__ == "__main__":
     """
         Test the particle filter
     """
-    fish_identification()
+    fish_orientation()
+    #fish_identification()
     #particle_filter_test()
 

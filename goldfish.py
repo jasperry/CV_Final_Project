@@ -193,18 +193,25 @@ class FishOrientation(pipeline.ProcessObject):
 
     def draw_features(self, coords):
         """
-            Draw rectangles around each (y,x) coordinate in coords
+            Draw shapes around each (y,x) coordinate in coords.
 
-            Rectangle size is given by self.r
+            The first coordinate will be drawn as a circle, and the
+            remaining coordinates as rectangles. self.r gives shape size.
         """
-        inpt = numpy.copy(self.getInput(0).getData()) # do we need to copy?
-
+        inpt = numpy.copy(self.getInput(0).getData())
         box_color = (255, 0, 0) # red
         r = self.r
-        for (y, x) in coords:
+
+        # Draw the first feature as a circle
+        (y,x) = coords[0]
+        cv2.circle(inpt, (x,y), self.r, box_color, thickness=2)
+
+        # Draw remaining features as rectangles
+        for (y, x) in coords[1:]:
             top_left = ( int(x-r), int(y-r) )
             bottom_right = ( int(x+r), int(y+r) )
             cv2.rectangle(inpt, top_left, bottom_right, box_color, thickness=2)
+
         self.getOutput(0).setData(inpt)
 
     def generateData(self):

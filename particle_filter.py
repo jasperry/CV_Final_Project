@@ -3,6 +3,7 @@
 import numpy
 import random
 import pipeline
+import imgutil
 from scipy import ndimage
 from scipy.ndimage import filters
 
@@ -20,16 +21,17 @@ Input(1) = Last Position of objects to be tracked
 '''
 class Particle_Filter(pipeline.ProcessObject):
 
-    def __init__(self, input=None, mask=None, pos=None, stepsize=None, n=None, best=False):
+    def __init__(self, input=None, mask=None, pos=None, stepsize=None, n=None, r = 8, best=False):
         pipeline.ProcessObject.__init__(self, input, 2)
         
         self.pos = pos
         self.stepsize = stepsize
         self.n = n
+        self.r = r
         self.x = numpy.ones((n,2), int) * pos
         self.hist = None
         self.best = best
-        
+        self.threshold = 0
         self.setInput(mask, 1)
         
         
@@ -37,11 +39,15 @@ class Particle_Filter(pipeline.ProcessObject):
         
         input = self.getInput(0).getData()
         mask = self.getInput(1).getData()
+        r = self.r
         
         #if there is no histogram for the initial object to be tracked, grab one
         if self.hist == None:
-            self.hist = self.make_histogram(input, self.x, self.stepsize)
+            self.hist = self.make_histogram(input, self.x, self.r)
+            x,y = self.x[0][:]
+            self.feature_patch = input[x-r:x+r,y-r:y+r].flatten()
             self.getOutput().setData(self.pos)
+            
             
         else:
         
@@ -69,7 +75,7 @@ class Particle_Filter(pipeline.ProcessObject):
             
             #calculate weights (as battacharyya distances)
             w = self.get_weights(new_hist, self.hist)
-            w /= numpy.sum(w)
+            w /= numpy.sum(w) #normalize
             
             if self.best:
                 #picks the location of the best particle
@@ -80,7 +86,18 @@ class Particle_Filter(pipeline.ProcessObject):
                 new_pos = numpy.sum(self.x.T*w, axis = 1)
             
             
+            
             self.getOutput(0).setData(new_pos)
+            #self.setOutput(True,1)
+            x, y = new_pos
+            self.new_patch = input[x-r:x+r,y-r:y+r].flatten()
+            ncc = imgutil.ncc(self.feature_patch, self.new_patch)
+            print "NCC = %d" % (ncc)
+            #if ncc value < threshold, eye is not in frame
+            if ncc < self.threshold:
+            	#self.setOutput(1, False)
+            	pass
+            	
             self.x = numpy.ones((self.n,2), int) * new_pos
             self.pos = new_pos
             
@@ -93,7 +110,7 @@ class Particle_Filter(pipeline.ProcessObject):
         n = len(weights)
         indices = []
         c = [0.] + [sum(weights[:i+1]) for i in range(n)]
-        u0, j = numpy.random(), 0
+        u0, j = numpy.random.random(), 0
         for u in [(u0+i)/n for i in range(n)]:
             while u > c[j]:
                 j+=1

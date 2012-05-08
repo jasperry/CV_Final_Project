@@ -183,7 +183,7 @@ class FishOrientation(pipeline.ProcessObject):
 
         # Draw the first feature as a circle
         (y,x) = coords[0]
-        cv2.circle(inpt, (x,y), self.r, box_color, thickness=2)
+        cv2.circle(inpt, (int(x),int(y)), self.r, box_color, thickness=2)
 
         # Draw remaining features as rectangles
         for (y, x) in coords[1:]:
@@ -369,7 +369,9 @@ def particle_filter_test():
     """
         Test the particle filter, tracking the eyeball of the fish.
     """
-    patch_n = 8
+    stepsize = 20
+    n = 100
+    patch_r = 8
     
      # A list of all frames where the goldfish and its shadow are absent
     bg_frame_fns = sorted(glob.glob("fish-83.2/blanks/*.tif"))
@@ -382,12 +384,12 @@ def particle_filter_test():
     display = Display(src.getOutput(), "Testosterone Laden Goldfish")
     
     blobs = particle_filter.DifferenceOfGaussian(src.getOutput())
-    p_filter = particle_filter.Particle_Filter(blobs.getOutput(), 
-            fish_presence.getOutput(0), numpy.array([102,123]), patch_n, 100,True)
+    p_filter = particle_filter.Particle_Filter(src.getOutput(), 
+            fish_presence.getOutput(0), numpy.array([102,123]),stepsize, n, patch_r,True)
     #p_filter3 = particle_filter.Particle_Filter(src.getOutput(),
     #       numpy.array([102,123]), patch_n, 100, True)
     features = FishOrientation(src.getOutput(), p_filter.getOutput(),
-            shape_size=patch_n)
+            shape_size=patch_r)
     #features3 = FishOrientation(src.getOutput(), p_filter3.getOutput(),
     #       shape_size=patch_n)
     display2 = Display(features.getOutput(), "Eye_Tracking")
@@ -425,7 +427,7 @@ if __name__ == "__main__":
         Test some aspect of the program in a specialized environment,
         unique of other program components (i.e. unit testing)
     """
-    test_orientation()
+    #test_orientation()
     #test_identification()
-    #particle_filter_test()
+    particle_filter_test()
 

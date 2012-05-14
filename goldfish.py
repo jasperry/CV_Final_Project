@@ -365,9 +365,10 @@ def test_identification():
     for (value, frame_name, fish_present) in sorted(intensity_data):
         intensity_out.writerow( [frame_name, value, fish_present] )
 
-def particle_filter_test():
+def main():
     """
-        Test the particle filter, tracking the eyeball of the fish.
+        Track the eye and dorsal fin of the fish, displaying information
+        about fish orientation and position.
     """
     stepsize = 20
     n = 100
@@ -381,42 +382,49 @@ def particle_filter_test():
     raw = source.FileStackReader(frames)
     src = color.Grayscale(raw.getOutput())
     fish_presence = LocateFish(src.getOutput(), avg_bg, 2.0)
-    display = Display(src.getOutput(), "Testosterone Laden Goldfish")
+    display = Display(src.getOutput(), "Testosterone-laden Goldfish")
     
     blobs = particle_filter.DifferenceOfGaussian(src.getOutput())
-    p_filter = particle_filter.Particle_Filter(src.getOutput(), 
-            fish_presence.getOutput(0), numpy.array([102,123]),stepsize, n, patch_r,True)
-    #p_filter3 = particle_filter.Particle_Filter(src.getOutput(),
-    #       numpy.array([102,123]), patch_n, 100, True)
-    features = FishOrientation(src.getOutput(), p_filter.getOutput(),
-            shape_size=patch_r)
-    #features3 = FishOrientation(src.getOutput(), p_filter3.getOutput(),
-    #       shape_size=patch_n)
+    eye_p_filter = particle_filter.Particle_Filter(src.getOutput(),
+            fish_presence.getOutput(0),  numpy.array([102, 123]), stepsize,  n,
+            patch_r, True)
+    fin_p_filter = particle_filter.Particle_Filter(src.getOutput(),
+            fish_presence.getOutput(0),  numpy.array([200, 109]),
+            stepsize,  n,  patch_r, True)
+    #fin_p_filter = None # Wait until 3rd frame to define it
+    features = FishOrientation(src.getOutput(), eye_p_filter.getOutput(),
+            fin_p_filter.getOutput(), shape_size=patch_r)
+
     display2 = Display(features.getOutput(), "Eye_Tracking")
-    #display3 = Display(blobs.getOutput(), "DoG")
+    display3 = Display(blobs.getOutput(), "DoG")
 
     display4 = Display(fish_presence.getOutput(0), "Fish background subtraction")
     
     key = None
-    frame = 0
     while key != 27:
         raw.update()
         src.update()
         display.update()
 
-        p_filter.update()
+        eye_p_filter.update()
         #p_filter3.update()
         #features3.update()
         features.update()
         display2.update()
-        #display3.update()
+        display3.update()
 
         fish_presence.update()
         display4.update()
         
-        frame += 1
-        # TODO: frame numbers increment indefinitely
+        # Get frame number from filename "fish-xx.x-yyyyyy.ext"
+        frame = int(raw.getFilename()[-10:-4])
         print "Frame: %d" % (frame)
+
+        # Define the dorsal fin the first time it's shown
+        if (frame == 3):
+            fin_p_filter = particle_filter.Particle_Filter(src.getOutput(),
+                    fish_presence.getOutput(0),  numpy.array([234, 125]),
+                    stepsize,  n,  patch_r, True)
 
         key = cv2.waitKey(10)
         key &= 255
@@ -429,5 +437,5 @@ if __name__ == "__main__":
     """
     #test_orientation()
     #test_identification()
-    particle_filter_test()
+    main()
 

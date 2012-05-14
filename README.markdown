@@ -8,3 +8,8 @@ directory as this repository, then run
     python goldfish.py
 
 Fish orientation, direction, etc. are printed to standard output.
+
+## Results
+
+A write-up of our project can be found on the [CS365 course
+wiki](https://wiki.colby.edu/display/CS365/CS365+Final+Project).

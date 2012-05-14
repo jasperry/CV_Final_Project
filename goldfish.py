@@ -156,7 +156,7 @@ class FishOrientation(pipeline.ProcessObject):
     # TODO: fin_feature is currently allowed to be None, so this works
     #       for just one feature. we should eventually disable this, though
     def __init__(self, inpt, eye_feature, fin_feature=None, min_dist=90,
-            shape_size=10, debug=False):
+            shape_size=10, verbose=False):
         """
             Initialize a pipeline object with the appropriate count of
             inputs and outputs, creating fields to specify shape sizes.
@@ -168,7 +168,7 @@ class FishOrientation(pipeline.ProcessObject):
 
         self.min_dist = min_dist
         self.r = shape_size /2
-        self.debug = debug
+        self.verbose = verbose
 
     def draw_features(self, coords):
         """
@@ -220,7 +220,7 @@ class FishOrientation(pipeline.ProcessObject):
         facing_left = (x_dist > 0)
         self.setOutput((fish_horizontal, facing_left), 1)
 
-        if self.debug:
+        if self.verbose:
             output = [ ("Fish's x distance", x_dist),
                        ("Euclidean distance", euclidean_dist),
                        ("Min. horizontal dist", self.min_dist),
@@ -257,7 +257,7 @@ def test_orientation():
     """
         Test the ability of determining fish orientation.
 
-        Generates fake coordinates, and activates debug mode so that we
+        Generates fake coordinates, and activates verbose mode so that we
         can see how the FishOrientation class handles these datapoints.
         Includes a time delay and visual output so we can confirm its
         accuracy with visual data.
@@ -282,7 +282,7 @@ def test_orientation():
     fin_coord = pipeline.Image(data = get_random_coord())
 
     orientation = FishOrientation(src.getOutput(), eye_coord, fin_coord,
-            debug=True)
+            verbose=True)
     feature_display = Display(orientation.getOutput(0),
             "Dummy features")
 
@@ -378,6 +378,7 @@ def main():
     bg_frame_fns = sorted(glob.glob("fish-83.2/blanks/*.tif"))
     avg_bg = average_images(bg_frame_fns)
     
+    # Read in images, convert to grayscale, and display
     frames = sorted(glob.glob("fish-83.2/*.tif"))
     raw = source.FileStackReader(frames)
     src = color.Grayscale(raw.getOutput())
@@ -385,37 +386,29 @@ def main():
     display = Display(src.getOutput(), "Testosterone-laden Goldfish")
     
     blobs = particle_filter.DifferenceOfGaussian(src.getOutput())
+
+    # Track eye and fin features
     eye_p_filter = particle_filter.Particle_Filter(src.getOutput(),
             fish_presence.getOutput(0),  numpy.array([102, 123]), stepsize,  n,
             patch_r, True)
     fin_p_filter = particle_filter.Particle_Filter(src.getOutput(),
             fish_presence.getOutput(0),  numpy.array([200, 109]),
             stepsize,  n,  patch_r, True)
-    #fin_p_filter = None # Wait until 3rd frame to define it
+
+    # Display the features
     features = FishOrientation(src.getOutput(), eye_p_filter.getOutput(),
-            fin_p_filter.getOutput(), shape_size=patch_r)
+            fin_p_filter.getOutput(), shape_size=patch_r, verbose=True)
 
-    display2 = Display(features.getOutput(), "Eye_Tracking")
-    display3 = Display(blobs.getOutput(), "DoG")
+    feature_display = Display(features.getOutput(), "Fish Tracking")
+    doG_display = Display(blobs.getOutput(), "Difference of Gaussian")
 
-    display4 = Display(fish_presence.getOutput(0), "Fish background subtraction")
+    binary_display = Display(fish_presence.getOutput(0), "Fish Isolation")
     
     key = None
     while key != 27:
         raw.update()
         src.update()
-        display.update()
 
-        eye_p_filter.update()
-        #p_filter3.update()
-        #features3.update()
-        features.update()
-        display2.update()
-        display3.update()
-
-        fish_presence.update()
-        display4.update()
-        
         # Get frame number from filename "fish-xx.x-yyyyyy.ext"
         frame = int(raw.getFilename()[-10:-4])
         print "Frame: %d" % (frame)
@@ -426,15 +419,22 @@ def main():
                     fish_presence.getOutput(0),  numpy.array([234, 125]),
                     stepsize,  n,  patch_r, True)
 
+        eye_p_filter.update()
+        fin_p_filter.update()
+        fish_presence.update()
+        features.update()
+
+        # Refresh displays
+        display.update()
+        feature_display.update()
+        doG_display.update()
+        binary_display.update()
+        
         key = cv2.waitKey(10)
         key &= 255
         raw.increment()
 
 if __name__ == "__main__":
-    """
-        Test some aspect of the program in a specialized environment,
-        unique of other program components (i.e. unit testing)
-    """
     #test_orientation()
     #test_identification()
     main()
